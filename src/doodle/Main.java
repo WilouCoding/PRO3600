@@ -1,6 +1,0 @@
-package doodle;
-public class Main {
-    public static void main(String[] args) {
-        System.out.println("Hello, i'am GoonerJump");
-    }
-}
