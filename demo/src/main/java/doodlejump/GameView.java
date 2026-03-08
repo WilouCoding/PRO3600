@@ -23,7 +23,20 @@ public class GameView extends Pane {
         generatePlatform(platforms);
         AnimationTimer timer = new AnimationTimer() {
             public void handle(long now){
+                
                 goon.update();
+
+                if (goon.velocityY > 0){
+                    for (Platform p : platforms){
+                        if (goon.x < p.x + p.WIDTH 
+                            && goon.x + Gooner.w > p.x 
+                            && goon.y + Gooner.h >= p.y
+                            && goon.y + Gooner.h <= p.y + p.HEIGHT){
+                            goon.jump();
+                        }
+                    }
+
+                }
                 draw(goon,platforms);
 
             }    
@@ -55,7 +68,7 @@ public class GameView extends Pane {
         gc.setFill(Color.BLACK);
         gc.fillRect(0,0,400,600);
         gc.setFill(Color.BLUEVIOLET);
-        gc.fillRect(goon.x,goon.y,40,60);
+        gc.fillRect(goon.x,goon.y,goon.w,goon.h);
         for (Platform p : platforms){
             gc.setFill(Color.GRAY);
             gc.fillRect(p.x, p.y, p.WIDTH, p.HEIGHT);
@@ -66,7 +79,7 @@ public class GameView extends Pane {
     Random random = new Random();
     for (int i=0; i<10; i++){
         double x = random.nextDouble() * (400 - Platform.WIDTH); // x aléatoire
-        double y = 500 - i * 60; // y décroissant pour espacer les plateformes
+        double y = 500 - i * Gooner.h; // y décroissant pour espacer les plateformes
         platforms.add(new Platform(x, y));
         }
     }
