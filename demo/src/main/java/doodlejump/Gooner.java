@@ -6,6 +6,8 @@ public class Gooner {
     public double velocityY;
     public double velocityX;
     public double GRAVITY = 0.0004;
+    public static final double w = 40;
+    public static final double h =60;
     public Gooner(double x, double y){
         this.x=x;
         this.y=y;
@@ -30,11 +32,11 @@ public class Gooner {
     }
 
     public void moveLeft(){
-        velocityX-=0.02;
+        velocityX-=0.08;
     }
     
     public void moveRight(){
-        velocityX+=0.02;
+        velocityX+=0.08;
     }
     
     public void stopX(){
