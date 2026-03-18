@@ -17,9 +17,10 @@ public class GameView extends Pane {
     private double standX = 180;
     private List<Platform> platforms = new ArrayList<>();
     Gooner goon = new Gooner(standX, standY);
-
+    
     private double cameraY = 0;
-
+    private Random rand = new Random();
+    
     public GameView() {
         getChildren().add(canvas);
         generatePlatform(platforms);
@@ -42,6 +43,12 @@ public class GameView extends Pane {
                 }
                 if (goon.y < cameraY + 350){
                     cameraY = goon.y - 350;
+                }
+                platforms.removeIf( p -> p.y - cameraY > 600); // supprimer les plateformes qui sont hors de l'écran
+                while (platforms.size() < 10){
+                    double x = rand.nextDouble() * (400 - Platform.WIDTH);
+                    double y = cameraY - rand.nextDouble() * Gooner.h ; // générer des plateformes au-dessus de l'écran
+                    platforms.add(new Platform(x, y));
                 }
 
                 draw(goon,platforms);
