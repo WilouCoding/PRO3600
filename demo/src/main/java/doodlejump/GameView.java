@@ -18,6 +18,8 @@ public class GameView extends Pane {
     private List<Platform> platforms = new ArrayList<>();
     Gooner goon = new Gooner(standX, standY);
 
+    private double cameraY = 0;
+
     public GameView() {
         getChildren().add(canvas);
         generatePlatform(platforms);
@@ -25,18 +27,23 @@ public class GameView extends Pane {
             public void handle(long now){
                 
                 goon.update();
-
+                
                 if (goon.velocityY > 0){
-                    for (Platform p : platforms){
+                    for (Platform p : platforms){ // collision
                         if (goon.x < p.x + p.WIDTH 
                             && goon.x + Gooner.w > p.x 
                             && goon.y + Gooner.h >= p.y
                             && goon.y + Gooner.h <= p.y + p.HEIGHT){
-                            goon.jump();
+                                goon.jump();
+                                //ajouter du code afin que le décor descendre et que les plateformes soient régénérées
                         }
                     }
 
                 }
+                if (goon.y < cameraY + 350){
+                    cameraY = goon.y - 350;
+                }
+
                 draw(goon,platforms);
 
             }    
@@ -68,10 +75,10 @@ public class GameView extends Pane {
         gc.setFill(Color.BLACK);
         gc.fillRect(0,0,400,600);
         gc.setFill(Color.BLUEVIOLET);
-        gc.fillRect(goon.x,goon.y,goon.w,goon.h);
+        gc.fillRect(goon.x,goon.y - cameraY,goon.w,goon.h);
         for (Platform p : platforms){
             gc.setFill(Color.GRAY);
-            gc.fillRect(p.x, p.y, p.WIDTH, p.HEIGHT);
+            gc.fillRect(p.x, p.y - cameraY, p.WIDTH, p.HEIGHT);
         }
     }
 
