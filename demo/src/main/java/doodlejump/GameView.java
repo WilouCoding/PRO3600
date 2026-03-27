@@ -3,14 +3,15 @@ package doodlejump;
 import javafx.scene.paint.Color;
 import javafx.scene.canvas.*;
 import javafx.scene.layout.Pane;
-import java.util.List;
 import javafx.animation.AnimationTimer;
 import javafx.scene.input.KeyCode;
-import java.util.ArrayList;
+
 import java.util.*;
 
-public class GameView extends Pane {
 
+
+public class GameView extends Pane {
+    private boolean isGameOver = false;
     private Canvas canvas = new Canvas(400, 600);
     private GraphicsContext gc = canvas.getGraphicsContext2D();
     private double standY = 280;
@@ -41,6 +42,9 @@ public class GameView extends Pane {
                     }
 
                 }
+                if (goon.y >cameraY + 600) {
+                    isGameOver =true;
+                }
                 if (goon.y < cameraY + 350){
                     cameraY = goon.y - 350;
                 }
@@ -67,6 +71,11 @@ public class GameView extends Pane {
             } else if (code == KeyCode.SPACE) {
                 goon.jump();
             }
+            if (isGameOver) {
+                if (code== KeyCode.SPACE){
+                    resetGame();
+                }
+            }
         }
     
         public void handleKeyRelease(KeyCode code) {
@@ -75,7 +84,15 @@ public class GameView extends Pane {
             }
         }
     
-    
+    private void resetGame() {
+        goon.x = standX;
+        goon.y = standY;
+        goon.velocityY = 0;
+        cameraY = 0;
+        platforms.clear();
+        generatePlatform(platforms);
+        isGameOver = false;
+    }
 
     
     public void draw(Gooner goon, List<Platform> platforms){
@@ -86,6 +103,13 @@ public class GameView extends Pane {
         for (Platform p : platforms){
             gc.setFill(Color.GRAY);
             gc.fillRect(p.x, p.y - cameraY, p.WIDTH, p.HEIGHT);
+        }
+        if (isGameOver) {
+            gc.setFill(Color.RED);
+            gc.setFont(javafx.scene.text.Font.font("Arial",40));
+            gc.fillText("GAME OVER", 80, 300);
+            gc.setFont(javafx.scene.text.Font.font("Arial",15));
+            gc.fillText("Appuyez sur Espace pour recommencer",60,340);
         }
     }
 
