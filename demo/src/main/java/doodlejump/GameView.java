@@ -1,4 +1,4 @@
-package doodlejump;
+    package doodlejump;
 
 import javafx.scene.paint.Color;
 import javafx.scene.canvas.*;
@@ -21,15 +21,19 @@ public class GameView extends Pane {
     
     private double cameraY = 0;
     private Random rand = new Random();
+    private GamePanel scorePanel;
     
     public GameView() {
         getChildren().add(canvas);
+        scorePanel = new GamePanel((int) standY);
+        getChildren().add(scorePanel); // Ajoute la fenêtre de score par-dessus le jeu
         generatePlatform(platforms);
         AnimationTimer timer = new AnimationTimer() {
             public void handle(long now){
                 
                 goon.update();
-                
+                scorePanel.updateScore(goon.y);
+
                 if (goon.velocityY > 0){
                     for (Platform p : platforms){ // collision
                         if (goon.x < p.x + p.WIDTH 
@@ -44,6 +48,7 @@ public class GameView extends Pane {
                 }
                 if (goon.y >cameraY + 600) {
                     isGameOver =true;
+                    scorePanel.setGameOver(true);
                 }
                 if (goon.y < cameraY + 350){
                     cameraY = goon.y - 350;
@@ -92,6 +97,7 @@ public class GameView extends Pane {
         platforms.clear();
         generatePlatform(platforms);
         isGameOver = false;
+        scorePanel.reset();
     }
 
     
@@ -103,13 +109,6 @@ public class GameView extends Pane {
         for (Platform p : platforms){
             gc.setFill(Color.GRAY);
             gc.fillRect(p.x, p.y - cameraY, p.WIDTH, p.HEIGHT);
-        }
-        if (isGameOver) {
-            gc.setFill(Color.RED);
-            gc.setFont(javafx.scene.text.Font.font("Arial",40));
-            gc.fillText("GAME OVER", 80, 300);
-            gc.setFont(javafx.scene.text.Font.font("Arial",15));
-            gc.fillText("Appuyez sur Espace pour recommencer",60,340);
         }
     }
 
