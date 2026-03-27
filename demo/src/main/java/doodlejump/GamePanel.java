@@ -52,6 +52,8 @@ public class GamePanel extends Canvas {
             
             gc.setFont(Font.font("Arial", 15));
             gc.fillText("Appuyez sur Espace pour recommencer", 60, 350);
+            gc.setFill(Color.LIGHTGRAY);
+            gc.fillText("Appuyez sur M pour le Menu", 60, 380);
         } else {
             // Affichage du score normal en jeu
             gc.setFill(Color.WHITE);

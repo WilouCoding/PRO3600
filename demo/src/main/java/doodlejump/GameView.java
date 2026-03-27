@@ -22,8 +22,10 @@ public class GameView extends Pane {
     private double cameraY = 0;
     private Random rand = new Random();
     private GamePanel scorePanel;
+    private App app;
 
-    public GameView() {
+    public GameView(App app) {
+        this.app = app;
         getChildren().add(canvas);
         scorePanel = new GamePanel((int) standY);
         getChildren().add(scorePanel); // Ajoute la fenêtre de score par-dessus le jeu
@@ -136,6 +138,9 @@ public class GameView extends Pane {
         if (isGameOver) {
             if (code == KeyCode.SPACE) {
                 resetGame();
+            }
+            if (code == KeyCode.M) {
+                app.showMenu(); // M = menu
             }
             return;
         }
