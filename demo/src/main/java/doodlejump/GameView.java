@@ -188,9 +188,20 @@ public class GameView extends Pane {
         gc.setFill(Color.BLACK);
         gc.fillRect(0, 0, 400, 600);
 
-        // Gooner
+        // Gooner (Dessin principal) - On utilise bien (y - cameraY)
         gc.setFill(Color.BLUEVIOLET);
-        gc.fillRect(goon.x, goon.y - cameraY, goon.w, goon.h);
+        gc.fillRect(goon.x, goon.y - cameraY, Gooner.w, Gooner.h);
+    
+        // Si le perso dépasse à droite, on dessine une copie à gauche
+        if (goon.x + Gooner.w > 400) {
+        // ATTENTION : ici aussi, il faut faire (goon.y - cameraY) !
+            gc.fillRect(goon.x - 400, goon.y - cameraY, Gooner.w, Gooner.h);
+        }
+        // Si le perso dépasse à gauche, on dessine une copie à droite
+        else if (goon.x < 0) {
+        // Idem ici : (goon.y - cameraY)
+            gc.fillRect(goon.x + 400, goon.y - cameraY, Gooner.w, Gooner.h);
+        }
 
         // Plateformes
         gc.setFill(Color.GRAY);

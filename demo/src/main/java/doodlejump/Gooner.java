@@ -19,11 +19,11 @@ public class Gooner {
         y+=velocityY;
         x+=velocityX;
 
-        if (x>400-20){
-            x=0;
+        if (x>400){
+            x-=400;
         }
-        if (x<0){
-            x=400-20;
+        if (x< -Gooner.w){
+            x+=400;
         }
     }
 
