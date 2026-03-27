@@ -42,13 +42,5 @@ public class Gooner {
     public void stopX(){
         velocityX=0;
     }
-    /*public double getx(){
-        return x;
-    }
-    public double gety(){
-        return y;
-    }  
-    public double getVelocityY(){
-        return velocityY;
-    }*/
+
 }

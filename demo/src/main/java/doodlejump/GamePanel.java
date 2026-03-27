@@ -54,6 +54,7 @@ public class GamePanel extends Canvas {
             gc.fillText("Appuyez sur Espace pour recommencer", 60, 350);
             gc.setFill(Color.LIGHTGRAY);
             gc.fillText("Appuyez sur M pour le Menu", 60, 380);
+            gc.fillText("Tu n'as plus qu'à repartir de 0 et être meilleur", 60, 410);    
         } else {
             // Affichage du score normal en jeu
             gc.setFill(Color.WHITE);

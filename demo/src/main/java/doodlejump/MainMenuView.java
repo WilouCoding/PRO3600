@@ -23,7 +23,7 @@ public class MainMenuView extends VBox {
         playButton.setStyle("-fx-font-size: 20px; -fx-background-color: #7132cf; -fx-text-fill: white;");
         playButton.setOnAction(e -> onPlayPressed.run());
 
-        // Bouton Boutique (pour tes futurs cosmétiques)
+        // Bouton Boutique désactivé pour l'instant
         Button shopButton = new Button("BOUTIQUE (Bientôt)");
         shopButton.setDisable(true); 
 
