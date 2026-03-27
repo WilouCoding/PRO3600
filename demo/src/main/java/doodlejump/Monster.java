@@ -10,7 +10,7 @@ public class Monster {
     public Monster(double x, double y) {
         this.x = x;
         this.y = y;
-        this.velocityX = 0.08; // se déplace horizontalement
+        this.velocityX = 0.8; // se déplace horizontalement
     }
  
     public void update() {

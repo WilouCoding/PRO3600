@@ -32,101 +32,111 @@ public class GameView extends Pane {
         generatePlatform(platforms);
 
         AnimationTimer timer = new AnimationTimer() {
+            // NOUVELLES VARIABLES POUR LE TEMPS ABSOLU
+            private long lastTime = 0;
+            private double accumulator = 0.0;
+            private final double TIME_STEP = 1.0 / 60.0; // On force 60 calculs par seconde
+
             public void handle(long now) {
-                if (isGameOver) {
-                    draw(goon, platforms);
+                // Initialisation au premier lancement
+                if (lastTime == 0) {
+                    lastTime = now;
                     return;
                 }
 
-                goon.update();
-                scorePanel.updateScore(goon.y); // <-- Mise à jour du score ici !
+                // Calcul du temps écoulé depuis la dernière frame (en secondes)
+                double elapsedTime = (now - lastTime) / 1_000_000_000.0;
+                lastTime = now;
+                accumulator += elapsedTime;
 
-                // --- Collision Gooner → Plateforme ---
-                if (goon.velocityY > 0) {
-                    for (Platform p : platforms) {
-                        if (goon.x < p.x + p.WIDTH
-                                && goon.x + Gooner.w > p.x
-                                && goon.y + Gooner.h >= p.y
-                                && goon.y + Gooner.h <= p.y + p.HEIGHT) {
-                            goon.jump();
+                // Sécurité : évite que le jeu plante si l'ordi a un gros coup de lag (Spiral of Death)
+                if (accumulator > 0.1) {
+                    accumulator = 0.1;
+                }
+
+                // --- 1. LOGIQUE DE JEU (Tourne à vitesse constante absolue) ---
+                while (accumulator >= TIME_STEP) {
+                    if (!isGameOver) {
+                        goon.update();
+                        scorePanel.updateScore(goon.y);
+
+                        // --- Collision Gooner → Plateforme ---
+                        if (goon.velocityY > 0) {
+                            for (Platform p : platforms) {
+                                if (goon.x < p.x + p.WIDTH
+                                        && goon.x + Gooner.w > p.x
+                                        && goon.y + Gooner.h >= p.y
+                                        && goon.y + Gooner.h <= p.y + p.HEIGHT) {
+                                    goon.jump();
+                                }
+                            }
                         }
-                    }
-                }
 
-                // --- Mise à jour Monstres ---
-                for (Monster m : monsters) {
-                    m.update();
-                }
+                        // --- Mise à jour Monstres et Balles ---
+                        for (Monster m : monsters) m.update();
+                        for (Bullet b : bullets) b.update();
 
-                // --- Mise à jour Balles ---
-                for (Bullet b : bullets) {
-                    b.update();
-                }
-
-                // --- Collision Balle → Monstre ---
-                for (Bullet b : bullets) {
-                    if (!b.active) continue;
-                    for (Monster m : monsters) {
-                        if (!m.isDead
-                                && b.x < m.x + Monster.WIDTH
-                                && b.x + Bullet.WIDTH > m.x
-                                && b.y < m.y + Monster.HEIGHT
-                                && b.y + Bullet.HEIGHT > m.y) {
-                            m.isDead = true;
-                            b.active = false;
+                        // --- Collision Balle → Monstre ---
+                        for (Bullet b : bullets) {
+                            if (!b.active) continue;
+                            for (Monster m : monsters) {
+                                if (!m.isDead && b.x < m.x + Monster.WIDTH && b.x + Bullet.WIDTH > m.x
+                                        && b.y < m.y + Monster.HEIGHT && b.y + Bullet.HEIGHT > m.y) {
+                                    m.isDead = true;
+                                    b.active = false;
+                                }
+                            }
                         }
-                    }
-                }
 
-                // --- Collision Gooner → Monstre ---
-                for (Monster m : monsters) {
-                    if (m.isDead) continue;
-                    if (goon.x < m.x + Monster.WIDTH
-                            && goon.x + Gooner.w > m.x
-                            && goon.y < m.y + Monster.HEIGHT
-                            && goon.y + Gooner.h > m.y) {
-                        // Sauter sur la tête du monstre → le tue et fait rebondir
-                        if (goon.velocityY > 0 && goon.y + Gooner.h <= m.y + Monster.HEIGHT / 2.0) {
-                            m.isDead = true;
-                            goon.jump();
-                        } else {
-                            // Touché par le côté ou en dessous → Game Over
+                        // --- Collision Gooner → Monstre ---
+                        for (Monster m : monsters) {
+                            if (m.isDead) continue;
+                            if (goon.x < m.x + Monster.WIDTH && goon.x + Gooner.w > m.x
+                                    && goon.y < m.y + Monster.HEIGHT && goon.y + Gooner.h > m.y) {
+                                if (goon.velocityY > 0 && goon.y + Gooner.h <= m.y + Monster.HEIGHT / 2.0) {
+                                    m.isDead = true;
+                                    goon.jump();
+                                } else {
+                                    isGameOver = true;
+                                    scorePanel.setGameOver(true);
+                                }
+                            }
+                        }
+
+                        // --- Game Over si chute hors écran ---
+                        if (goon.y > cameraY + 600) {
                             isGameOver = true;
-                            scorePanel.setGameOver(true); // <-- On prévient le panel de score !
+                            scorePanel.setGameOver(true);
+                        }
+
+                        // --- Déplacement caméra ---
+                        if (goon.y < cameraY + 350) {
+                            cameraY = goon.y - 350;
+                        }
+
+                        // --- Nettoyage et Génération ---
+                        platforms.removeIf(p -> p.y - cameraY > 600);
+                        monsters.removeIf(m -> m.isDead || m.y - cameraY > 650);
+                        bullets.removeIf(b -> !b.active || b.y < cameraY - 50);
+
+                        while (platforms.size() < 11) {
+                            double x = rand.nextDouble() * (400 - Platform.WIDTH);
+                            double y = cameraY - rand.nextDouble() * Gooner.h;
+                            platforms.add(new Platform(x, y));
+                        }
+
+                        if (monsters.size() < 3 && rand.nextInt(100) < 2) {
+                            double x = rand.nextDouble() * (400 - Monster.WIDTH);
+                            double y = cameraY - rand.nextDouble() * 400 - 100;
+                            monsters.add(new Monster(x, y));
                         }
                     }
-                } // <-- Il manquait toutes ces accolades de fermeture !
-
-                // --- Game Over si chute hors écran ---
-                if (goon.y > cameraY + 600) {
-                    isGameOver = true;
-                    scorePanel.setGameOver(true);
+                    
+                    // On retire le temps consommé par cette "tick" logique
+                    accumulator -= TIME_STEP;
                 }
 
-                // --- Déplacement caméra ---
-                if (goon.y < cameraY + 350) {
-                    cameraY = goon.y - 350;
-                }
-
-                // --- Nettoyage des objets hors écran ---
-                platforms.removeIf(p -> p.y - cameraY > 600);
-                monsters.removeIf(m -> m.isDead || m.y - cameraY > 650);
-                bullets.removeIf(b -> !b.active || b.y < cameraY - 50);
-
-                // --- Génération de nouvelles plateformes ---
-                while (platforms.size() < 11) {
-                    double x = rand.nextDouble() * (400 - Platform.WIDTH);
-                    double y = cameraY - rand.nextDouble() * Gooner.h;
-                    platforms.add(new Platform(x, y));
-                }
-
-                // --- Spawn de monstres (max 3 à la fois, spawn aléatoire) ---
-                if (monsters.size() < 3 && rand.nextInt(100) < 2) {
-                    double x = rand.nextDouble() * (400 - Monster.WIDTH);
-                    double y = cameraY - rand.nextDouble() * 400 - 100;
-                    monsters.add(new Monster(x, y));
-                }
-
+                // --- 2. RENDU GRAPHIQUE (Dessiné à chaque frame d'écran) ---
                 draw(goon, platforms);
             }
         };
