@@ -138,7 +138,7 @@ public class GameView extends Pane {
             goon.moveLeft();
         } else if (code == KeyCode.RIGHT) {
             goon.moveRight();
-        } else if (code == KeyCode.SPACE) {
+        } else if (code == KeyCode.A) {
             goon.jump();
         } else if (code == KeyCode.Z) {
             // Touche Z (AZERTY) pour tirer
