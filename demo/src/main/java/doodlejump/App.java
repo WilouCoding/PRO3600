@@ -10,8 +10,8 @@ public class App extends Application {
 
         GameView gameView = new GameView();
         Scene scene = new Scene(gameView, 400, 600);
-        scene.setOnKeyPressed(e -> gameView.handleKeyPress(e.getCode()));
-        scene.setOnKeyReleased(e -> gameView.handleKeyRelease(e.getCode()));
+        scene.setOnKeyPressed(e -> gameView.handleKeyPress(e.getCode()));  // fonction lambda
+        scene.setOnKeyReleased(e -> gameView.handleKeyRelease(e.getCode()));  // détecte si on touche les flèches du clavier 
         stage.setScene(scene);
         stage.setTitle("DoodleJump");
         stage.show();

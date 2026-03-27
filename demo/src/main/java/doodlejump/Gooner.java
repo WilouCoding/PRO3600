@@ -4,28 +4,29 @@ public class Gooner {
     public double x;
     public double y;
     public double velocityY;
-    public double velocityX;
-    public double GRAVITY = 0.0004;
-    public static final double w = 40;
-    public static final double h =60;
+    public double velocityX;  // vitesse du perso
+    public double GRAVITY = 0.0004;  // gravité
+    public static final double w = 40; 
+    public static final double h =60;  // valeurs fixe pour la taille du persp
     public Gooner(double x, double y){
         this.x=x;
         this.y=y;
-        velocityY=0;
-        velocityX=0;
+        velocityY=0;  
+        velocityX=0;  // car le perso n'a pas de vitesse de base
     }
-    public void update(){
-        velocityY+=GRAVITY;
-        y+=velocityY;
-        x+=velocityX;
+    
+    public void update() {
+    velocityY += GRAVITY;
+    y += velocityY;
+    x += velocityX;
 
-        if (x>400-20){
-            x=0;
-        }
-        if (x<0){
-            x=400-20;
-        }
+    // On attend que le perso soit entièrement sorti pour réinitialiser sa position réelle
+    if (x > 400) {
+        x -= 400; 
+    } else if (x < -Gooner.w) {
+        x += 400;
     }
+}
 
     public void jump(){
         velocityY=-0.3;

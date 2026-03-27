@@ -2,7 +2,7 @@ package doodlejump;
 
 import java.util.Random;
 
-public class Platform {
+public class Platform {  // génère les plateformes sur lesquelles le perso rebondira
     public double x;
     public double y;
     public static final double WIDTH = 70;
