@@ -21,12 +21,8 @@ public class GameView extends Pane {
 
     private double cameraY = 0;
     private Random rand = new Random();
-<<<<<<< HEAD
     private GamePanel scorePanel;
-    
-=======
 
->>>>>>> 50627bf10ec764b3a0b36dafe0a936bac01341c4
     public GameView() {
         getChildren().add(canvas);
         scorePanel = new GamePanel((int) standY);
@@ -41,18 +37,7 @@ public class GameView extends Pane {
                 }
 
                 goon.update();
-<<<<<<< HEAD
-                scorePanel.updateScore(goon.y);
-
-                if (goon.velocityY > 0){
-                    for (Platform p : platforms){ // collision
-                        if (goon.x < p.x + p.WIDTH 
-                            && goon.x + Gooner.w > p.x 
-                            && goon.y + Gooner.h >= p.y
-                            && goon.y + Gooner.h <= p.y + p.HEIGHT){
-                                goon.jump();
-                                //ajouter du code afin que le décor descendre et que les plateformes soient régénérées
-=======
+                scorePanel.updateScore(goon.y); // <-- Mise à jour du score ici !
 
                 // --- Collision Gooner → Plateforme ---
                 if (goon.velocityY > 0) {
@@ -62,7 +47,6 @@ public class GameView extends Pane {
                                 && goon.y + Gooner.h >= p.y
                                 && goon.y + Gooner.h <= p.y + p.HEIGHT) {
                             goon.jump();
->>>>>>> 50627bf10ec764b3a0b36dafe0a936bac01341c4
                         }
                     }
                 }
@@ -71,16 +55,10 @@ public class GameView extends Pane {
                 for (Monster m : monsters) {
                     m.update();
                 }
-<<<<<<< HEAD
-                if (goon.y >cameraY + 600) {
-                    isGameOver =true;
-                    scorePanel.setGameOver(true);
-=======
 
                 // --- Mise à jour Balles ---
                 for (Bullet b : bullets) {
                     b.update();
->>>>>>> 50627bf10ec764b3a0b36dafe0a936bac01341c4
                 }
 
                 // --- Collision Balle → Monstre ---
@@ -112,13 +90,15 @@ public class GameView extends Pane {
                         } else {
                             // Touché par le côté ou en dessous → Game Over
                             isGameOver = true;
+                            scorePanel.setGameOver(true); // <-- On prévient le panel de score !
                         }
                     }
-                }
+                } // <-- Il manquait toutes ces accolades de fermeture !
 
                 // --- Game Over si chute hors écran ---
                 if (goon.y > cameraY + 600) {
                     isGameOver = true;
+                    scorePanel.setGameOver(true);
                 }
 
                 // --- Déplacement caméra ---
@@ -212,8 +192,6 @@ public class GameView extends Pane {
         for (Platform p : platforms) {
             gc.fillRect(p.x, p.y - cameraY, p.WIDTH, p.HEIGHT);
         }
-<<<<<<< HEAD
-=======
 
         // Monstres
         gc.setFill(Color.RED);
@@ -229,17 +207,7 @@ public class GameView extends Pane {
             if (b.active) {
                 gc.fillRect(b.x, b.y - cameraY, Bullet.WIDTH, Bullet.HEIGHT);
             }
-        }
-
-        // Game Over
-        if (isGameOver) {
-            gc.setFill(Color.RED);
-            gc.setFont(javafx.scene.text.Font.font("Arial", 40));
-            gc.fillText("GAME OVER", 80, 300);
-            gc.setFont(javafx.scene.text.Font.font("Arial", 15));
-            gc.fillText("Appuyez sur Espace pour recommencer", 60, 340);
-        }
->>>>>>> 50627bf10ec764b3a0b36dafe0a936bac01341c4
+        }        
     }
 
     public void generatePlatform(List<Platform> platforms) {
