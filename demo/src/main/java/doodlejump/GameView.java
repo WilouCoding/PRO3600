@@ -207,7 +207,7 @@ public class GameView extends Pane {
         }
 
         // Balles
-        gc.setFill(Color.YELLOW);
+        gc.setFill(Color.WHITE);
         for (Bullet b : bullets) {
             if (b.active) {
                 gc.fillRect(b.x, b.y - cameraY, Bullet.WIDTH, Bullet.HEIGHT);
