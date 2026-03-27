@@ -17,7 +17,10 @@ public class GameView extends Pane {
     private double standX = 180;
     private List<Platform> platforms = new ArrayList<>();
     Gooner goon = new Gooner(standX, standY);
-
+    
+    private double cameraY = 0;
+    private Random rand = new Random();
+    
     public GameView() {
         getChildren().add(canvas);
         generatePlatform(platforms);
@@ -25,18 +28,29 @@ public class GameView extends Pane {
             public void handle(long now){
                 
                 goon.update();
-
+                
                 if (goon.velocityY > 0){
-                    for (Platform p : platforms){
+                    for (Platform p : platforms){ // collision
                         if (goon.x < p.x + p.WIDTH 
                             && goon.x + Gooner.w > p.x 
                             && goon.y + Gooner.h >= p.y
                             && goon.y + Gooner.h <= p.y + p.HEIGHT){
-                            goon.jump();
+                                goon.jump();
+                                //ajouter du code afin que le décor descendre et que les plateformes soient régénérées
                         }
                     }
 
                 }
+                if (goon.y < cameraY + 350){
+                    cameraY = goon.y - 350;
+                }
+                platforms.removeIf( p -> p.y - cameraY > 600); // supprimer les plateformes qui sont hors de l'écran
+                while (platforms.size() < 11){
+                    double x = rand.nextDouble() * (400 - Platform.WIDTH);
+                    double y = cameraY - rand.nextDouble() * Gooner.h ; // générer des plateformes au-dessus de l'écran
+                    platforms.add(new Platform(x, y));
+                }
+
                 draw(goon,platforms);
 
             }    
@@ -68,16 +82,16 @@ public class GameView extends Pane {
         gc.setFill(Color.BLACK);
         gc.fillRect(0,0,400,600);
         gc.setFill(Color.BLUEVIOLET);
-        gc.fillRect(goon.x,goon.y,goon.w,goon.h);
+        gc.fillRect(goon.x,goon.y - cameraY,goon.w,goon.h);
         for (Platform p : platforms){
             gc.setFill(Color.GRAY);
-            gc.fillRect(p.x, p.y, p.WIDTH, p.HEIGHT);
+            gc.fillRect(p.x, p.y - cameraY, p.WIDTH, p.HEIGHT);
         }
     }
 
     public void generatePlatform(List<Platform> platforms){
     Random random = new Random();
-    for (int i=0; i<10; i++){
+    for (int i=0; i<11; i++){
         double x = random.nextDouble() * (400 - Platform.WIDTH); // x aléatoire
         double y = 500 - i * Gooner.h; // y décroissant pour espacer les plateformes
         platforms.add(new Platform(x, y));
