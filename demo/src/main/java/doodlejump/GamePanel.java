@@ -54,7 +54,6 @@ public class GamePanel extends Canvas {
             gc.setFont(Font.font("Arial", 25));
             gc.fillText("Score Final : " + score, 120, 200);
             
-            // --- NOUVEAU : Affichage du Leaderboard ---
             gc.setFill(Color.YELLOW);
             gc.setFont(Font.font("Arial", 20));
             gc.fillText("--- TOP 5 ---", 140, 250);
@@ -64,7 +63,7 @@ public class GamePanel extends Canvas {
             for (int i = 0; i < topScores.size(); i++) {
                 gc.fillText((i + 1) + ". " + topScores.get(i), 160, 285 + (i * 25));
             }
-            // ------------------------------------------
+            
 
             gc.setFont(Font.font("Arial", 15));
             gc.fillText("Appuyez sur Espace pour recommencer", 60, 450);
@@ -72,10 +71,8 @@ public class GamePanel extends Canvas {
             gc.setFill(Color.WHITE);
             gc.setFont(Font.font("Arial", 20));
             
-            // --- NOUVEAU : Affichage dynamique du Best Score ---
-            // Math.max permet au "Best" d'augmenter en direct si on bat le record pendant la partie !
             int displayBest = Math.max(score, highScoreManager.getBestScore());
-            gc.fillText("Best: " + displayBest, 10, 30);
+            gc.fillText("Meilleur Score: " + displayBest, 10, 30);
             gc.fillText("Score: " + score, 10, 55);
         }
     }
