@@ -54,13 +54,13 @@ public class GameView extends Pane {
                     accumulator = 0.1;
                 }
 
-                // --- 1. LOGIQUE DE JEU (Tourne à vitesse constante absolue) ---
+                //  1. LOGIQUE DE JEU (Tourne à vitesse constante absolue) 
                 while (accumulator >= TIME_STEP) {
                     if (!isGameOver) {
                         goon.update();
                         scorePanel.updateScore(goon.y);
 
-                        // --- Collision Gooner → Plateforme ---
+                        //  Collision Gooner → Plateforme 
                         if (goon.velocityY > 0) {
                             for (Platform p : platforms) {
                                 if (goon.x < p.x + p.WIDTH
@@ -72,11 +72,11 @@ public class GameView extends Pane {
                             }
                         }
 
-                        // --- Mise à jour Monstres et Balles ---
+                        //  Mise à jour Monstres et Balles 
                         for (Monster m : monsters) m.update();
                         for (Bullet b : bullets) b.update();
 
-                        // --- Collision Balle → Monstre ---
+                        //  Collision Balle → Monstre 
                         for (Bullet b : bullets) {
                             if (!b.active) continue;
                             for (Monster m : monsters) {
@@ -88,7 +88,7 @@ public class GameView extends Pane {
                             }
                         }
 
-                        // --- Collision Gooner → Monstre ---
+                        //  Collision Gooner → Monstre 
                         for (Monster m : monsters) {
                             if (m.isDead) continue;
                             if (goon.x < m.x + Monster.WIDTH && goon.x + Gooner.w > m.x
@@ -103,18 +103,18 @@ public class GameView extends Pane {
                             }
                         }
 
-                        // --- Game Over si chute hors écran ---
+                        //  Game Over si chute hors écran 
                         if (goon.y > cameraY + 600) {
                             isGameOver = true;
                             scorePanel.setGameOver(true);
                         }
 
-                        // --- Déplacement caméra ---
+                        //  Déplacement caméra 
                         if (goon.y < cameraY + 350) {
                             cameraY = goon.y - 350;
                         }
 
-                        // --- Nettoyage et Génération ---
+                        //  Nettoyage et Génération 
                         platforms.removeIf(p -> p.y - cameraY > 600);
                         monsters.removeIf(m -> m.isDead || m.y - cameraY > 650);
                         bullets.removeIf(b -> !b.active || b.y < cameraY - 50);
@@ -136,7 +136,7 @@ public class GameView extends Pane {
                     accumulator -= TIME_STEP;
                 }
 
-                // --- 2. RENDU GRAPHIQUE (Dessiné à chaque frame d'écran) ---
+                //  2. RENDU GRAPHIQUE (Dessiné à chaque frame d'écran) 
                 draw(goon, platforms);
             }
         };
@@ -162,7 +162,7 @@ public class GameView extends Pane {
         } else if (code == KeyCode.SPACE) {
             goon.jump();
         } else if (code == KeyCode.Z) {
-            // Touche Z (AZERTY) pour tirer
+            // Touche Z pour tirer
             shoot();
         }
     }
@@ -195,12 +195,31 @@ public class GameView extends Pane {
 
     public void draw(Gooner goon, List<Platform> platforms) {
         // Fond
-        gc.setFill(Color.BLACK);
+        gc.setFill(Color.web("#0a0a1a")); // Un bleu très foncé/noir
         gc.fillRect(0, 0, 400, 600);
+
+        // Dessin de la grille dynamique
+        gc.setStroke(Color.web("#1a1a3a")); // Couleur des lignes
+        gc.setLineWidth(1.0);
+    
+        double gridSize = 40.0;
+        // On calcule le décalage pour que la grille semble suivre le mouvement
+        double offset = -(cameraY % gridSize); 
+
+        // Lignes horizontales
+        for (double y = offset; y < 600; y += gridSize) {
+            gc.strokeLine(0, y, 400, y);
+        }
+        // Lignes verticales
+        for (double x = 0; x < 400; x += gridSize) {
+           gc.strokeLine(x, 0, x, 600);
+        }
 
         // Gooner (Dessin principal) - On utilise bien (y - cameraY)
         gc.setFill(Color.BLUEVIOLET);
-        gc.fillRect(goon.x, goon.y - cameraY, Gooner.w, Gooner.h);
+        gc.fillRoundRect(goon.x, goon.y - cameraY, goon.w, goon.h, 15, 15);
+        gc.setStroke(Color.WHITE);
+        gc.strokeRoundRect(goon.x, goon.y - cameraY, goon.w, goon.h, 15, 15);
     
         // Si le perso dépasse à droite, on dessine une copie à gauche
         if (goon.x + Gooner.w > 400) {
@@ -216,7 +235,7 @@ public class GameView extends Pane {
         // Plateformes
         gc.setFill(Color.GRAY);
         for (Platform p : platforms) {
-            gc.fillRect(p.x, p.y - cameraY, p.WIDTH, p.HEIGHT);
+            gc.fillRoundRect(p.x, p.y - cameraY, p.WIDTH, p.HEIGHT, 10, 10);
         }
 
         // Monstres
