@@ -8,6 +8,7 @@ public class Gooner {
     public static final double GRAVITY = 0.04;
     public static final double w = 40;
     public static final double h =60;
+    public int coins = 0;
     public Gooner(double x, double y){
         this.x=x;
         this.y=y;
