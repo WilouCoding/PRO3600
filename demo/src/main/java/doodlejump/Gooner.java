@@ -5,7 +5,7 @@ public class Gooner {
     public double y;
     public double velocityY;
     public double velocityX;
-    public static final double GRAVITY = 0.04;
+    public static final double GRAVITY = 0.06;
     public static final double w = 40;
     public static final double h =60;
     public Gooner(double x, double y){
@@ -28,7 +28,7 @@ public class Gooner {
     }
 
     public void jump(){
-        velocityY=-3.0;
+        velocityY=-6.0;
     }
 
     public void moveLeft(){
