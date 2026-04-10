@@ -83,4 +83,14 @@ public class GamePanel extends Canvas {
         isGameOver = false; 
         drawScreen();       
     }
+
+    // Permet de récupérer le score actuel pour le menu Pause
+    public int getScore() {
+        return score;
+    }
+
+    // Permet de récupérer le HighScoreManager pour le menu Pause
+    public HighScoreManager getHighScoreManager() {
+        return highScoreManager;
+    }
 }

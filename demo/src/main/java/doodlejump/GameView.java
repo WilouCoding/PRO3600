@@ -1,15 +1,21 @@
-    package doodlejump;
+   package doodlejump;
 
 import javafx.scene.paint.Color;
 import javafx.scene.canvas.*;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;         // NOUVEAU
+import javafx.scene.control.Label;       // NOUVEAU
+import javafx.scene.control.Button;      // NOUVEAU
+import javafx.geometry.Pos;              // NOUVEAU
 import javafx.animation.AnimationTimer;
 import javafx.scene.input.KeyCode;
+import javafx.scene.text.Font;
 
 import java.util.*;
 
 public class GameView extends Pane {
     private boolean isGameOver = false;
+    private boolean isPaused = false; // NOUVEAU : État de la pause
     private Canvas canvas = new Canvas(400, 600);
     private GraphicsContext gc = canvas.getGraphicsContext2D();
     private double standY = 280;
@@ -23,76 +29,73 @@ public class GameView extends Pane {
     private Random rand = new Random();
     private GamePanel scorePanel;
     private App app;
+    private VBox pauseMenu; // NOUVEAU : L'interface du menu pause
 
     public GameView(App app) {
         this.app = app;
         getChildren().add(canvas);
         scorePanel = new GamePanel((int) standY);
-        getChildren().add(scorePanel); // Ajoute la fenêtre de score par-dessus le jeu
+        getChildren().add(scorePanel); 
+
+        createPauseMenu(); // NOUVEAU : On fabrique le menu
+        getChildren().add(pauseMenu); // NOUVEAU : On l'ajoute par-dessus (il est invisible par défaut)
+
         generatePlatform(platforms);
 
         AnimationTimer timer = new AnimationTimer() {
-            // NOUVELLES VARIABLES POUR LE TEMPS ABSOLU
             private long lastTime = 0;
             private double accumulator = 0.0;
-            private final double TIME_STEP = 1.0 / 60.0; // On force 60 calculs par seconde
+            private final double TIME_STEP = 1.0 / 60.0; 
 
             public void handle(long now) {
-                // Initialisation au premier lancement
                 if (lastTime == 0) {
                     lastTime = now;
                     return;
                 }
 
-                // Calcul du temps écoulé depuis la dernière frame (en secondes)
+                // NOUVEAU : Si on est en pause, on met à jour lastTime pour éviter que l'accumulateur n'explose, et on arrête la logique
+                if (isPaused) {
+                    lastTime = now;
+                    return; 
+                }
+
                 double elapsedTime = (now - lastTime) / 1_000_000_000.0;
                 lastTime = now;
                 accumulator += elapsedTime;
 
-                // Sécurité : évite que le jeu plante si l'ordi a un gros coup de lag (Spiral of Death)
                 if (accumulator > 0.1) {
                     accumulator = 0.1;
                 }
 
-                //  1. LOGIQUE DE JEU (Tourne à vitesse constante absolue) 
                 while (accumulator >= TIME_STEP) {
                     if (!isGameOver) {
                         goon.update();
                         scorePanel.updateScore(goon.y);
 
-                        //  Collision Gooner → Plateforme 
                         if (goon.velocityY > 0) {
                             for (Platform p : platforms) {
-                                if (goon.x < p.x + p.WIDTH
-                                        && goon.x + Gooner.w > p.x
-                                        && goon.y + Gooner.h >= p.y
-                                        && goon.y + Gooner.h <= p.y + p.HEIGHT) {
+                                if (goon.x < p.x + p.WIDTH && goon.x + Gooner.w > p.x && goon.y + Gooner.h >= p.y && goon.y + Gooner.h <= p.y + p.HEIGHT) {
                                     goon.jump();
                                 }
                             }
                         }
 
-                        //  Mise à jour Monstres et Balles 
                         for (Monster m : monsters) m.update();
                         for (Bullet b : bullets) b.update();
 
-                        //  Collision Balle → Monstre 
                         for (Bullet b : bullets) {
                             if (!b.active) continue;
                             for (Monster m : monsters) {
-                                if (!m.isDead && b.x < m.x + Monster.WIDTH && b.x + Bullet.WIDTH > m.x
-                                        && b.y < m.y + Monster.HEIGHT && b.y + Bullet.HEIGHT > m.y) {
+                                if (!m.isDead && b.x < m.x + Monster.WIDTH && b.x + Bullet.WIDTH > m.x && b.y < m.y + Monster.HEIGHT && b.y + Bullet.HEIGHT > m.y) {
                                     m.isDead = true;
                                     b.active = false;
                                 }
                             }
                         }
 
-                        //  Collision Gooner → Monstre 
                         for (Monster m : monsters) {
                             if (m.isDead) continue;
-                            if (goon.x < m.x + Monster.WIDTH && goon.x + Gooner.w > m.x
-                                    && goon.y < m.y + Monster.HEIGHT && goon.y + Gooner.h > m.y) {
+                            if (goon.x < m.x + Monster.WIDTH && goon.x + Gooner.w > m.x && goon.y < m.y + Monster.HEIGHT && goon.y + Gooner.h > m.y) {
                                 if (goon.velocityY > 0 && goon.y + Gooner.h <= m.y + Monster.HEIGHT / 2.0) {
                                     m.isDead = true;
                                     goon.jump();
@@ -103,18 +106,15 @@ public class GameView extends Pane {
                             }
                         }
 
-                        //  Game Over si chute hors écran 
                         if (goon.y > cameraY + 600) {
                             isGameOver = true;
                             scorePanel.setGameOver(true);
                         }
 
-                        //  Déplacement caméra 
                         if (goon.y < cameraY + 350) {
                             cameraY = goon.y - 350;
                         }
 
-                        //  Nettoyage et Génération 
                         platforms.removeIf(p -> p.y - cameraY > 600);
                         monsters.removeIf(m -> m.isDead || m.y - cameraY > 650);
                         bullets.removeIf(b -> !b.active || b.y < cameraY - 50);
@@ -131,50 +131,124 @@ public class GameView extends Pane {
                             monsters.add(new Monster(x, y));
                         }
                     }
-                    
-                    // On retire le temps consommé par cette "tick" logique
                     accumulator -= TIME_STEP;
                 }
 
-                //  2. RENDU GRAPHIQUE (Dessiné à chaque frame d'écran) 
                 draw(goon, platforms);
             }
         };
         timer.start();
     }
 
-    public void handleKeyPress(KeyCode code) {
-        // Réinitialisation si Game Over
-        if (isGameOver) {
-            if (code == KeyCode.SPACE) {
-                resetGame();
-            }
-            if (code == KeyCode.M) {
-                app.showMenu(); // M = menu
-            }
-            return;
-        }
+    
+    private void createPauseMenu() {
+        pauseMenu = new VBox(15);
+        pauseMenu.setAlignment(Pos.CENTER);
+        // Fond noir semi-transparent
+        pauseMenu.setStyle("-fx-background-color: rgba(0, 0, 0, 0.85); -fx-padding: 20; -fx-background-radius: 15;");
+        pauseMenu.setPrefSize(300, 420);
+        pauseMenu.setLayoutX(50); // Centré (400-300)/2
+        pauseMenu.setLayoutY(90);
 
-        if (code == KeyCode.LEFT) {
-            goon.moveLeft();
-        } else if (code == KeyCode.RIGHT) {
-            goon.moveRight();
-        } else if (code == KeyCode.SPACE) {
-            goon.jump();
-        } else if (code == KeyCode.Z) {
-            // Touche Z pour tirer
-            shoot();
+        Label title = new Label("PAUSE");
+        title.setTextFill(Color.WHITE);
+        title.setFont(Font.font("Arial", 30));
+
+        Label scoreLabel = new Label("Score actuel: 0");
+        scoreLabel.setTextFill(Color.YELLOW);
+        scoreLabel.setFont(Font.font("Arial", 20));
+        
+        VBox recordsBox = new VBox(5);
+        recordsBox.setAlignment(Pos.CENTER);
+        
+        Button resumeBtn = new Button("Reprendre (P)");
+        resumeBtn.setOnAction(e -> togglePause());
+
+        Button restartBtn = new Button("Recommencer");
+        restartBtn.setOnAction(e -> {
+            togglePause();
+            resetGame();
+        });
+
+        Button quitBtn = new Button("Quitter vers le Menu");
+        quitBtn.setOnAction(e -> app.showMenu());
+
+        String btnStyle = "-fx-font-size: 16px; -fx-background-color: #7132cf; -fx-text-fill: white; -fx-cursor: hand;";
+        resumeBtn.setStyle(btnStyle);
+        restartBtn.setStyle(btnStyle);
+        quitBtn.setStyle(btnStyle);
+
+        pauseMenu.getChildren().addAll(
+            title, 
+            scoreLabel, 
+            new Label("--- RECORDS ---") {{ setTextFill(Color.WHITE); setFont(Font.font("Arial", 16)); }}, 
+            recordsBox, 
+            resumeBtn, 
+            restartBtn, 
+            quitBtn
+        );
+        pauseMenu.setVisible(false);
+    }
+
+    
+    private void togglePause() {
+        if (isGameOver) return; // Pas de pause quand on est mort
+
+        isPaused = !isPaused;
+
+        if (isPaused) {
+            // Mise à jour du score actuel
+            Label scoreLbl = (Label) pauseMenu.getChildren().get(1);
+            scoreLbl.setText("Score actuel: " + scorePanel.getScore());
+
+            
+            VBox recordsBox = (VBox) pauseMenu.getChildren().get(3);
+            recordsBox.getChildren().clear();
+            List<Integer> top5 = scorePanel.getHighScoreManager().getTop5();
+            for (int i = 0; i < top5.size(); i++) {
+                Label l = new Label((i + 1) + ". " + top5.get(i));
+                l.setTextFill(Color.WHITE);
+                l.setFont(Font.font("Arial", 14));
+                recordsBox.getChildren().add(l);
+            }
+
+            pauseMenu.setVisible(true);
+        } else {
+            pauseMenu.setVisible(false);
+            this.requestFocus();
         }
     }
 
+    public void handleKeyPress(KeyCode code) {
+
+        if (code == KeyCode.P) {
+            togglePause();
+            return;
+        }
+
+        
+        if (isPaused) return;
+
+        if (isGameOver) {
+            if (code == KeyCode.SPACE) resetGame();
+            if (code == KeyCode.M) app.showMenu();
+            return;
+        }
+
+        if (code == KeyCode.LEFT) goon.moveLeft();
+        else if (code == KeyCode.RIGHT) goon.moveRight();
+        else if (code == KeyCode.SPACE) goon.jump();
+        else if (code == KeyCode.Z) shoot();
+    }
+
     public void handleKeyRelease(KeyCode code) {
+        if (isPaused) return; 
         if (code == KeyCode.LEFT || code == KeyCode.RIGHT) {
             goon.stopX();
         }
     }
 
     private void shoot() {
-        // Tire une balle depuis le centre haut du Gooner
         double bx = goon.x + Gooner.w / 2.0 - Bullet.WIDTH / 2.0;
         double by = goon.y;
         bullets.add(new Bullet(bx, by));
@@ -190,68 +264,48 @@ public class GameView extends Pane {
         bullets.clear();
         generatePlatform(platforms);
         isGameOver = false;
+        isPaused = false; // Par sécurité
         scorePanel.reset();
     }
 
     public void draw(Gooner goon, List<Platform> platforms) {
         // Fond
-        gc.setFill(Color.web("#0a0a1a")); // Un bleu très foncé/noir
+        gc.setFill(Color.web("#0a0a1a")); 
         gc.fillRect(0, 0, 400, 600);
 
-        // Dessin de la grille dynamique
-        gc.setStroke(Color.web("#1a1a3a")); // Couleur des lignes
+        gc.setStroke(Color.web("#1a1a3a"));
         gc.setLineWidth(1.0);
     
         double gridSize = 40.0;
-        // On calcule le décalage pour que la grille semble suivre le mouvement
         double offset = -(cameraY % gridSize); 
 
-        // Lignes horizontales
-        for (double y = offset; y < 600; y += gridSize) {
-            gc.strokeLine(0, y, 400, y);
-        }
-        // Lignes verticales
-        for (double x = 0; x < 400; x += gridSize) {
-           gc.strokeLine(x, 0, x, 600);
-        }
+        for (double y = offset; y < 600; y += gridSize) gc.strokeLine(0, y, 400, y);
+        for (double x = 0; x < 400; x += gridSize) gc.strokeLine(x, 0, x, 600);
 
-        // Gooner (Dessin principal) - On utilise bien (y - cameraY)
         gc.setFill(Color.BLUEVIOLET);
         gc.fillRoundRect(goon.x, goon.y - cameraY, goon.w, goon.h, 15, 15);
         gc.setStroke(Color.WHITE);
         gc.strokeRoundRect(goon.x, goon.y - cameraY, goon.w, goon.h, 15, 15);
     
-        // Si le perso dépasse à droite, on dessine une copie à gauche
         if (goon.x + Gooner.w > 400) {
-        // ATTENTION : ici aussi, il faut faire (goon.y - cameraY) !
             gc.fillRect(goon.x - 400, goon.y - cameraY, Gooner.w, Gooner.h);
-        }
-        // Si le perso dépasse à gauche, on dessine une copie à droite
-        else if (goon.x < 0) {
-        // Idem ici : (goon.y - cameraY)
+        } else if (goon.x < 0) {
             gc.fillRect(goon.x + 400, goon.y - cameraY, Gooner.w, Gooner.h);
         }
 
-        // Plateformes
         gc.setFill(Color.GRAY);
         for (Platform p : platforms) {
             gc.fillRoundRect(p.x, p.y - cameraY, p.WIDTH, p.HEIGHT, 10, 10);
         }
 
-        // Monstres
         gc.setFill(Color.RED);
         for (Monster m : monsters) {
-            if (!m.isDead) {
-                gc.fillRect(m.x, m.y - cameraY, Monster.WIDTH, Monster.HEIGHT);
-            }
+            if (!m.isDead) gc.fillRect(m.x, m.y - cameraY, Monster.WIDTH, Monster.HEIGHT);
         }
 
-        // Balles
         gc.setFill(Color.WHITE);
         for (Bullet b : bullets) {
-            if (b.active) {
-                gc.fillRect(b.x, b.y - cameraY, Bullet.WIDTH, Bullet.HEIGHT);
-            }
+            if (b.active) gc.fillRect(b.x, b.y - cameraY, Bullet.WIDTH, Bullet.HEIGHT);
         }        
     }
 
