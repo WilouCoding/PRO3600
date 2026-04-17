@@ -72,17 +72,27 @@ public class GameView extends Pane {
                         goon.update();
                         scorePanel.updateScore(goon.y);
 
+                        //On prépare les 3 positions X possibles du Gooner
+                        double[] xPositions = { goon.x, goon.x - 400, goon.x + 400 };
+
+                        //Collision Gooner → Plateforme
                         if (goon.velocityY > 0) {
                             for (Platform p : platforms) {
-                                if (goon.x < p.x + p.WIDTH && goon.x + Gooner.w > p.x && goon.y + Gooner.h >= p.y && goon.y + Gooner.h <= p.y + p.HEIGHT) {
-                                    goon.jump();
+                                // On vérifie si l'une des 3 positions touche la plateforme
+                                for (double gx : xPositions) {
+                                    if (gx < p.x + p.WIDTH && gx + Gooner.w > p.x && goon.y + Gooner.h >= p.y && goon.y + Gooner.h <= p.y + p.HEIGHT) {
+                                        goon.jump();
+                                        break; // On a touché, pas besoin de tester les autres fantômes
+                                    }
                                 }
                             }
                         }
 
+                        //Mise à jour Monstres et Balles
                         for (Monster m : monsters) m.update();
                         for (Bullet b : bullets) b.update();
 
+                        //Collision Balle → Monstre (Inchangée)
                         for (Bullet b : bullets) {
                             if (!b.active) continue;
                             for (Monster m : monsters) {
@@ -93,9 +103,20 @@ public class GameView extends Pane {
                             }
                         }
 
+                        //Collision Gooner → Monstre
                         for (Monster m : monsters) {
                             if (m.isDead) continue;
-                            if (goon.x < m.x + Monster.WIDTH && goon.x + Gooner.w > m.x && goon.y < m.y + Monster.HEIGHT && goon.y + Gooner.h > m.y) {
+                            
+                            // On vérifie si un des "fantômes" ou le vrai perso touche le monstre
+                            boolean hit = false;
+                            for (double gx : xPositions) {
+                                if (gx < m.x + Monster.WIDTH && gx + Gooner.w > m.x && goon.y < m.y + Monster.HEIGHT && goon.y + Gooner.h > m.y) {
+                                    hit = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (hit) {
                                 if (goon.velocityY > 0 && goon.y + Gooner.h <= m.y + Monster.HEIGHT / 2.0) {
                                     m.isDead = true;
                                     goon.jump();
@@ -105,7 +126,6 @@ public class GameView extends Pane {
                                 }
                             }
                         }
-
                         if (goon.y > cameraY + 600) {
                             isGameOver = true;
                             scorePanel.setGameOver(true);
@@ -287,10 +307,15 @@ public class GameView extends Pane {
         gc.setStroke(Color.WHITE);
         gc.strokeRoundRect(goon.x, goon.y - cameraY, goon.w, goon.h, 15, 15);
     
+        // Si le perso dépasse à droite, on dessine une copie à gauche
         if (goon.x + Gooner.w > 400) {
-            gc.fillRect(goon.x - 400, goon.y - cameraY, Gooner.w, Gooner.h);
-        } else if (goon.x < 0) {
-            gc.fillRect(goon.x + 400, goon.y - cameraY, Gooner.w, Gooner.h);
+            gc.fillRoundRect(goon.x - 400, goon.y - cameraY, Gooner.w, Gooner.h, 15, 15);
+            gc.strokeRoundRect(goon.x - 400, goon.y - cameraY, Gooner.w, Gooner.h, 15, 15);
+        } 
+        // Si le perso dépasse à gauche, on dessine une copie à droite
+        else if (goon.x < 0) {
+            gc.fillRoundRect(goon.x + 400, goon.y - cameraY, Gooner.w, Gooner.h, 15, 15);
+            gc.strokeRoundRect(goon.x + 400, goon.y - cameraY, Gooner.w, Gooner.h, 15, 15);
         }
 
         gc.setFill(Color.GRAY);
