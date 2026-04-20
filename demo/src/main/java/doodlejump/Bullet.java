@@ -4,7 +4,7 @@ public class Bullet {
     public double x, y;
     public static final double WIDTH = 6;
     public static final double HEIGHT = 12;
-    private static final double SPEED = 5.0;
+    private static final double SPEED = 10.0;
     public boolean active = true;
  
     public Bullet(double x, double y) {
