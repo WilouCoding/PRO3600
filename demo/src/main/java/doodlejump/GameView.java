@@ -139,16 +139,49 @@ public class GameView extends Pane {
                         monsters.removeIf(m -> m.isDead || m.y - cameraY > 650);
                         bullets.removeIf(b -> !b.active || b.y < cameraY - 50);
 
+                        //Génération des plateformes 
                         while (platforms.size() < 11) {
+                            //On cherche la plateforme la plus haute actuelle (le Y le plus petit)
+                            double highestY = cameraY;
+                            for (Platform p : platforms) {
+                                if (p.y < highestY) {
+                                    highestY = p.y;
+                                }
+                            }
+                            
                             double x = rand.nextDouble() * (400 - Platform.WIDTH);
-                            double y = cameraY - rand.nextDouble() * Gooner.h;
+                            //La nouvelle plateforme se place toujours au-dessus de la plus haute (espacement garanti)
+                            double y = highestY - (60 + rand.nextDouble() * 60);
                             platforms.add(new Platform(x, y));
                         }
 
+                        //Spawn des monstres 
                         if (monsters.size() < 3 && rand.nextInt(100) < 2) {
                             double x = rand.nextDouble() * (400 - Monster.WIDTH);
-                            double y = cameraY - rand.nextDouble() * 400 - 100;
-                            monsters.add(new Monster(x, y));
+                            double y = cameraY - 100 - rand.nextDouble() * 300; // Entre 100 et 400 pixels au-dessus de la caméra
+                            
+                            boolean isOverlapping = false;
+                            
+                            // On vérifie que le monstre ne spawn pas dans ou trop près d'une plateforme
+                            for (Platform p : platforms) {
+                                if (Math.abs(p.y - y) < 40 && Math.abs(p.x - x) < 80) {
+                                    isOverlapping = true;
+                                    break;
+                                }
+                            }
+                            
+                            // On vérifie qu'il ne spawn pas sur un autre monstre
+                            for (Monster m : monsters) {
+                                if (Math.abs(m.y - y) < 50 && Math.abs(m.x - x) < 50) {
+                                    isOverlapping = true;
+                                    break;
+                                }
+                            }
+                            
+                            // Si l'emplacement est libre, on spawn le monstre
+                            if (!isOverlapping) {
+                                monsters.add(new Monster(x, y));
+                            }
                         }
                     }
                     accumulator -= TIME_STEP;
@@ -335,11 +368,20 @@ public class GameView extends Pane {
     }
 
     public void generatePlatform(List<Platform> platforms) {
+        platforms.clear();
+        
+        //La plateforme de sécurité exacte sous les pieds du joueur
+        platforms.add(new Platform(standX, standY + Gooner.h + 100));
+
+        //Générer les 10 autres plateformes en montant progressivement
+        double highestY = standY + Gooner.h;
         Random random = new Random();
-        for (int i = 0; i < 11; i++) {
+
+        for (int i = 1; i < 11; i++) {
             double x = random.nextDouble() * (400 - Platform.WIDTH);
-            double y = 500 - i * Gooner.h;
-            platforms.add(new Platform(x, y));
+            //On espace chaque plateforme de 60 à 120 pixels de la précédente
+            highestY -= (60 + random.nextDouble() * 60); 
+            platforms.add(new Platform(x, highestY));
         }
     }
 }
