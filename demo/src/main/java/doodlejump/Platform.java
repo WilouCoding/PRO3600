@@ -11,11 +11,15 @@ public class Platform {
     public double velocityPlatx;
     public double velocityPlaty; 
 
-    public Platform(double x, double y){
+    public boolean isFragile = false; // Est-ce qu'elle se casse ?
+    public int bounceCount = 0; // Combien de fois on a sauté dessus
+
+    public Platform(double x, double y, boolean isFragile){
         this.x=x;
         this.y=y;
         velocityPlaty=0;
         velocityPlatx=0;
+        this.isFragile = isFragile;
     }
 
 }

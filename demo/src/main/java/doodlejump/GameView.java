@@ -76,17 +76,34 @@ public class GameView extends Pane {
                         double[] xPositions = { goon.x, goon.x - 400, goon.x + 400 };
 
                         //Collision Gooner → Plateforme
-                        if (goon.velocityY > 0) {
+                        if (goon.velocityY > 0) { // Le perso descend
                             for (Platform p : platforms) {
-                                // On vérifie si l'une des 3 positions touche la plateforme
+                                boolean collisionDetectee = false;
+        
+                                // On vérifie la collision pour le perso réel ET ses fantômes
                                 for (double gx : xPositions) {
-                                    if (gx < p.x + p.WIDTH && gx + Gooner.w > p.x && goon.y + Gooner.h >= p.y && goon.y + Gooner.h <= p.y + p.HEIGHT) {
-                                        goon.jump();
-                                        break; // On a touché, pas besoin de tester les autres fantômes
+                                    if (gx < p.x + Platform.WIDTH 
+                                        && gx + Gooner.w > p.x 
+                                        && goon.y + Gooner.h >= p.y 
+                                        && goon.y + Gooner.h <= p.y + Platform.HEIGHT) {
+                
+                                        collisionDetectee = true;
+                                        break; // Une collision trouvée suffit
+                                    }
+                                }
+
+                                if (collisionDetectee) {
+                                    goon.jump(); // Rebond
+
+                                    if (p.isFragile) {
+                                        p.bounceCount++;
                                     }
                                 }
                             }
                         }
+
+                        // Nettoyage des plateformes cassées (à mettre juste après la boucle for)
+                        platforms.removeIf(p -> p.isFragile && p.bounceCount >= 1);
 
                         //Mise à jour Monstres et Balles
                         for (Monster m : monsters) m.update();
@@ -152,7 +169,15 @@ public class GameView extends Pane {
                             double x = rand.nextDouble() * (400 - Platform.WIDTH);
                             //La nouvelle plateforme se place toujours au-dessus de la plus haute (espacement garanti)
                             double y = highestY - (60 + rand.nextDouble() * 60);
-                            platforms.add(new Platform(x, y));
+
+                            // Si on est monté assez haut (cameraY est négatif et diminue), 
+                            // on a par exemple 25% de chance d'avoir une plateforme fragile
+                            boolean fragile = false;
+                            if (cameraY < -2000 && rand.nextInt(100) < 25) {
+                                fragile = true;
+                            }
+    
+                            platforms.add(new Platform(x, y, fragile));
                         }
 
                         //Spawn des monstres 
@@ -351,9 +376,36 @@ public class GameView extends Pane {
             gc.strokeRoundRect(goon.x + 400, goon.y - cameraY, Gooner.w, Gooner.h, 15, 15);
         }
 
-        gc.setFill(Color.GRAY);
         for (Platform p : platforms) {
-            gc.fillRoundRect(p.x, p.y - cameraY, p.WIDTH, p.HEIGHT, 10, 10);
+            if (p.isFragile) {
+                gc.setFill(Color.web("#8B4513")); // Plateforme fragile
+        } else {
+                gc.setFill(Color.GRAY);  // Plateforme normale
+        }
+
+        // fillRoundRect(x, y, largeur, hauteur, rayon_largeur, rayon_hauteur)
+            gc.fillRoundRect(p.x, p.y - cameraY, Platform.WIDTH, Platform.HEIGHT, 15, 15);
+    
+            gc.setStroke(Color.BLACK);
+            gc.setLineWidth(1);
+            gc.strokeRoundRect(p.x, p.y - cameraY, Platform.WIDTH, Platform.HEIGHT, 15, 15);
+        
+            if (p.isFragile) {
+                gc.setStroke(Color.YELLOW); // Couleur de l'éclair
+                gc.setLineWidth(2);         // Un peu plus épais pour qu'on le voie bien
+
+                // On calcule le centre de la plateforme
+                double midX = p.x + Platform.WIDTH / 2;
+                double midY = p.y - cameraY;
+
+                // On dessine un éclair en 3 segments (Z-shape)
+                // Segment 1 : du haut vers le milieu
+                gc.strokeLine(midX + 5, midY + 2, midX - 5, midY + 6);
+                // Segment 2 : le retour au milieu
+                gc.strokeLine(midX - 5, midY + 6, midX + 5, midY + 6);
+                // Segment 3 : du milieu vers le bas
+                gc.strokeLine(midX + 5, midY + 6, midX - 5, midY + 10);
+            }   
         }
 
         gc.setFill(Color.RED);
@@ -371,7 +423,7 @@ public class GameView extends Pane {
         platforms.clear();
         
         //La plateforme de sécurité exacte sous les pieds du joueur
-        platforms.add(new Platform(standX, standY + Gooner.h + 100));
+        platforms.add(new Platform(standX, standY + Gooner.h + 100, false));
 
         //Générer les 10 autres plateformes en montant progressivement
         double highestY = standY + Gooner.h;
@@ -381,7 +433,7 @@ public class GameView extends Pane {
             double x = random.nextDouble() * (400 - Platform.WIDTH);
             //On espace chaque plateforme de 60 à 120 pixels de la précédente
             highestY -= (60 + random.nextDouble() * 60); 
-            platforms.add(new Platform(x, highestY));
+            platforms.add(new Platform(x, highestY, false));
         }
     }
 }
