@@ -2,8 +2,8 @@ package doodlejump;
  
 public class Bullet {
     public double x, y;
-    public static final double WIDTH = 6;
-    public static final double HEIGHT = 12;
+    public static final double WIDTH = 8;
+    public static final double HEIGHT = 8;
     private static final double SPEED = 10.0;
     public boolean active = true;
  

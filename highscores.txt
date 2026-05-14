@@ -2,6 +2,7 @@
 6069
 4883
 1130
+<<<<<<< Updated upstream
 617
 549
 =======
@@ -11,3 +12,7 @@
 49
 25
 >>>>>>> 2b5486a (nouveau meilleur score)
+=======
+841
+838
+>>>>>>> Stashed changes

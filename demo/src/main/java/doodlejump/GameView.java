@@ -23,6 +23,7 @@ public class GameView extends Pane {
     private List<Platform> platforms = new ArrayList<>();
     private List<Monster> monsters = new ArrayList<>();
     private List<Bullet> bullets = new ArrayList<>();
+    private Set<String> input = new HashSet<>();
     Gooner goon = new Gooner(standX, standY);
 
     private double cameraY = 0;
@@ -33,6 +34,18 @@ public class GameView extends Pane {
 
     public GameView(App app) {
         this.app = app;
+        this.setOnKeyPressed(e -> {
+            input.add(e.getCode().toString());
+        });
+
+        this.setOnKeyReleased(e -> {
+            input.remove(e.getCode().toString());
+        });
+
+        this.setFocusTraversable(true); // Important pour capter le clavier
+        this.setOnKeyPressed(e -> input.add(e.getCode().toString()));
+        this.setOnKeyReleased(e -> input.remove(e.getCode().toString()));
+
         getChildren().add(canvas);
         scorePanel = new GamePanel((int) standY);
         getChildren().add(scorePanel); 
@@ -48,6 +61,14 @@ public class GameView extends Pane {
             private final double TIME_STEP = 1.0 / 60.0; 
 
             public void handle(long now) {
+                if (input.contains("LEFT")) {
+                    goon.x -= 5;
+                    goon.facingLeft = true; // On change l'état ici !
+                } else if (input.contains("RIGHT")) {
+                    goon.x += 5;
+                    goon.facingLeft = false; // On change l'état ici !
+                }
+
                 if (lastTime == 0) {
                     lastTime = now;
                     return;
@@ -75,30 +96,40 @@ public class GameView extends Pane {
                         //On prépare les 3 positions X possibles du Gooner
                         double[] xPositions = { goon.x, goon.x - 400, goon.x + 400 };
 
-                        //Collision Gooner → Plateforme
-                        if (goon.velocityY > 0) { // Le perso descend
-                            for (Platform p : platforms) {
+                        for (Platform p : platforms) {
+                            p.update();
+
+                            //Collision Gooner → Plateforme
+                            if (goon.velocityY > 0) { // Le perso descend
                                 boolean collisionDetectee = false;
-        
+            
                                 // On vérifie la collision pour le perso réel ET ses fantômes
                                 for (double gx : xPositions) {
                                     if (gx < p.x + Platform.WIDTH 
                                         && gx + Gooner.w > p.x 
                                         && goon.y + Gooner.h >= p.y 
                                         && goon.y + Gooner.h <= p.y + Platform.HEIGHT) {
-                
+                    
                                         collisionDetectee = true;
                                         break; // Une collision trouvée suffit
+                                        }
                                     }
-                                }
 
                                 if (collisionDetectee) {
-                                    goon.jump(); // Rebond
-
-                                    if (p.isFragile) {
-                                        p.bounceCount++;
+                                    if (p.isGhost) {
+                                        // On ne fait pas sauter le Gooner.
+                                        // On marque juste la plateforme pour qu'elle disparaisse.
+                                        p.bounceCount++; 
+                                    } else {
+                                        // C'est une plateforme normale, fragile ou mobile
+                                        goon.jump(); 
+                                        if (p.isFragile) {
+                                            p.bounceCount++;
+                                        }
                                     }
+                                        
                                 }
+                                
                             }
                         }
 
@@ -171,13 +202,29 @@ public class GameView extends Pane {
                             double y = highestY - (60 + rand.nextDouble() * 60);
 
                             // Si on est monté assez haut (cameraY est négatif et diminue), 
-                            // on a par exemple 25% de chance d'avoir une plateforme fragile
+                            // on a par exemple 25% de chance d'avoir une plateforme fragile et 30% de mobile
                             boolean fragile = false;
-                            if (cameraY < -2000 && rand.nextInt(100) < 25) {
-                                fragile = true;
+                            boolean moving = false;
+                            boolean ghost = false;
+
+                            if(cameraY < -6000) {
+                                int chance = rand.nextInt(100);
+                                if (chance < 25) fragile = true;      // 25% de chance d'être fragile
+                                else if (chance < 55) moving = true; // 30% de chance d'être mobile
+                                else if (chance < 65) ghost = true;   // 10% de chance d'être fantôme
+                            
+                            // Si on est à hauteur moyenne de -4000, seulement des fragiles   
+                            } else if (cameraY < -4000) {
+                                int chance = rand.nextInt(100);
+                                if (chance < 20) fragile = true;      // 20% de chance d'être fragile
+                                else if (chance < 40) moving = true; // 20% de chance d'être mobile
+                            } 
+                            // Si on est à hauteur moyenne de -2000, seulement des fragiles
+                            else if (cameraY < -2000) {
+                                if (rand.nextInt(100) < 20) fragile = true;
                             }
-    
-                            platforms.add(new Platform(x, y, fragile));
+
+                            platforms.add(new Platform(x, y, fragile, moving, ghost));
                         }
 
                         //Spawn des monstres 
@@ -359,33 +406,35 @@ public class GameView extends Pane {
 
         for (double y = offset; y < 600; y += gridSize) gc.strokeLine(0, y, 400, y);
         for (double x = 0; x < 400; x += gridSize) gc.strokeLine(x, 0, x, 600);
-
-        gc.setFill(Color.BLUEVIOLET);
-        gc.fillRoundRect(goon.x, goon.y - cameraY, goon.w, goon.h, 15, 15);
-        gc.setStroke(Color.WHITE);
-        gc.strokeRoundRect(goon.x, goon.y - cameraY, goon.w, goon.h, 15, 15);
     
         // Si le perso dépasse à droite, on dessine une copie à gauche
         if (goon.x + Gooner.w > 400) {
-            gc.fillRoundRect(goon.x - 400, goon.y - cameraY, Gooner.w, Gooner.h, 15, 15);
-            gc.strokeRoundRect(goon.x - 400, goon.y - cameraY, Gooner.w, Gooner.h, 15, 15);
+            drawGoonerWithOrientation(goon.x - 400, goon.y - cameraY);
         } 
         // Si le perso dépasse à gauche, on dessine une copie à droite
         else if (goon.x < 0) {
-            gc.fillRoundRect(goon.x + 400, goon.y - cameraY, Gooner.w, Gooner.h, 15, 15);
-            gc.strokeRoundRect(goon.x + 400, goon.y - cameraY, Gooner.w, Gooner.h, 15, 15);
+            drawGoonerWithOrientation(goon.x + 400, goon.y - cameraY);
         }
+
+        // Dessin du personnage principal (toujours appelé)
+        drawGoonerWithOrientation(goon.x, goon.y - cameraY);
 
         for (Platform p : platforms) {
-            if (p.isFragile) {
-                gc.setFill(Color.web("#8B4513")); // Plateforme fragile
-        } else {
-                gc.setFill(Color.GRAY);  // Plateforme normale
-        }
+            if (p.isMoving) {
+                gc.setFill(Color.LIGHTBLUE); // Plateforme mobile
+            } else if (p.isFragile) {
+                gc.setFill(Color.BROWN);
+            } else if (p.isGhost) {
+                gc.setGlobalAlpha(0.5); // Rend la plateforme à moitié transparente
+                gc.setFill(Color.YELLOW);
+            } else {
+                gc.setFill(Color.GRAY);
+            }
 
-        // fillRoundRect(x, y, largeur, hauteur, rayon_largeur, rayon_hauteur)
+            // fillRoundRect(x, y, largeur, hauteur, rayon_largeur, rayon_hauteur)
             gc.fillRoundRect(p.x, p.y - cameraY, Platform.WIDTH, Platform.HEIGHT, 15, 15);
-    
+            gc.setGlobalAlpha(1.0);
+
             gc.setStroke(Color.BLACK);
             gc.setLineWidth(1);
             gc.strokeRoundRect(p.x, p.y - cameraY, Platform.WIDTH, Platform.HEIGHT, 15, 15);
@@ -407,15 +456,36 @@ public class GameView extends Pane {
                 gc.strokeLine(midX + 5, midY + 6, midX - 5, midY + 10);
             }   
         }
-
-        gc.setFill(Color.RED);
-        for (Monster m : monsters) {
-            if (!m.isDead) gc.fillRect(m.x, m.y - cameraY, Monster.WIDTH, Monster.HEIGHT);
+        
+        if (goon.facingLeft) {
+            // On dessine l'image inversée
+            // x + w : on décale le point de départ à droite
+            // -w : on dessine vers la gauche pour créer l'effet miroir
+            gc.drawImage(goon.skin, goon.x + Gooner.w, goon.y - cameraY, -Gooner.w, Gooner.h);
+        } else {
+            // Dessin normal vers la droite
+            gc.drawImage(goon.skin, goon.x, goon.y - cameraY, Gooner.w, Gooner.h);
         }
 
-        gc.setFill(Color.WHITE);
+        for (Monster m : monsters) {
+            if (!m.isDead) {
+                // On dessine le skin du monstre à la place du rectangle
+                gc.drawImage(m.skin, m.x, m.y - cameraY, Monster.WIDTH, Monster.HEIGHT);
+            }
+        }
+
+        gc.setFill(Color.WHITE); // Couleur blanche
         for (Bullet b : bullets) {
-            if (b.active) gc.fillRect(b.x, b.y - cameraY, Bullet.WIDTH, Bullet.HEIGHT);
+            if (b.active) {
+                // On utilise fillOval au lieu de fillRect
+                //WIDTH et HEIGHT doivent être identiques pour faire un rond
+                gc.fillOval(b.x, b.y - cameraY, Bullet.WIDTH, Bullet.HEIGHT);
+                
+                // Optionnel : un petit effet de lueur (glow) pour les rendre plus visibles
+                gc.setGlobalAlpha(0.3);
+                gc.fillOval(b.x - 2, (b.y - cameraY) - 2, Bullet.WIDTH + 4, Bullet.HEIGHT + 4);
+                gc.setGlobalAlpha(1.0);
+            }
         }        
     }
 
@@ -423,7 +493,7 @@ public class GameView extends Pane {
         platforms.clear();
         
         //La plateforme de sécurité exacte sous les pieds du joueur
-        platforms.add(new Platform(standX, standY + Gooner.h + 100, false));
+        platforms.add(new Platform(standX, standY + Gooner.h + 100, false, false, false));
 
         //Générer les 10 autres plateformes en montant progressivement
         double highestY = standY + Gooner.h;
@@ -433,7 +503,17 @@ public class GameView extends Pane {
             double x = random.nextDouble() * (400 - Platform.WIDTH);
             //On espace chaque plateforme de 60 à 120 pixels de la précédente
             highestY -= (60 + random.nextDouble() * 60); 
-            platforms.add(new Platform(x, highestY, false));
+            platforms.add(new Platform(x, highestY, false, false, false));
+        }
+    }
+
+    private void drawGoonerWithOrientation(double x, double y) {
+        if (goon.facingLeft) {
+            // Dessin inversé (Miroir) : on décale de 'w' et on dessine sur '-w'
+            gc.drawImage(goon.skin, x + Gooner.w, y, -Gooner.w, Gooner.h);
+        } else {
+            // Dessin normal
+            gc.drawImage(goon.skin, x, y, Gooner.w, Gooner.h);
         }
     }
 }

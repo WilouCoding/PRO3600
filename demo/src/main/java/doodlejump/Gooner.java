@@ -1,18 +1,25 @@
 package doodlejump;
 
+import javafx.scene.image.Image;
+
 public class Gooner {
     public double x;
     public double y;
     public double velocityY;
     public double velocityX;
     public static final double GRAVITY = 0.06;
-    public static final double w = 40;
+    public static final double w = 50;
     public static final double h =60;
+
+    public Image skin;
+    public boolean facingLeft = false; // Pour savoir dans quelle direction le personnage regarde
+
     public Gooner(double x, double y){
         this.x=x;
         this.y=y;
         velocityY=0;
         velocityX=0;
+        this.skin = new Image(getClass().getResourceAsStream("/gooner_skin.png"));
     }
     public void update(){
         velocityY+=GRAVITY;
