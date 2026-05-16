@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /home/charles-bobo/Cours/PRO3600/PRO3600/demo/src/main/java/doodlejump/Gooner.java
 /home/charles-bobo/Cours/PRO3600/PRO3600/demo/src/main/java/doodlejump/PlayerAccount.java
 /home/charles-bobo/Cours/PRO3600/PRO3600/demo/src/main/java/doodlejump/Monster.java
@@ -16,3 +17,19 @@
 /home/charles-bobo/Cours/PRO3600/PRO3600/demo/src/main/java/doodlejump/HighScoreManager.java
 /home/charles-bobo/Cours/PRO3600/PRO3600/demo/src/main/java/doodlejump/AccountType.java
 /home/charles-bobo/Cours/PRO3600/PRO3600/demo/src/main/java/doodlejump/MainMenuView.java
+=======
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/Bonus.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/GameView.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/Bullet.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/Coin.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/HighScoreManager.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/Gooner.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/Platform.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/GameLoop.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/App.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/CoinManager.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/GamePanel.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/module-info.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/MainMenuView.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/Monster.java
+>>>>>>> 518f8793df882c189d431b20d0bec692b234e11d

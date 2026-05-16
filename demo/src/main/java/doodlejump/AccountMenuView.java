@@ -12,7 +12,7 @@ import javafx.scene.paint.Color;
 public class AccountMenuView extends VBox {
     private final Label messageLabel = new Label();
 
-    public AccountMenuView(AccountManager accountManager, Runnable onBack) {
+    public AccountMenuView(AccountManager accountManager, Runnable onBack, java.util.function.Consumer<String> onLoginSuccess) {
         setSpacing(12);
         setPadding(new Insets(20));
         setAlignment(Pos.CENTER);
@@ -73,6 +73,7 @@ public class AccountMenuView extends VBox {
             String username = usernameField.getText().trim();
             String password = passwordField.getText();
             if (accountManager.authenticate(username, password)) {
+                onLoginSuccess.accept(username);
                 showMessage("Connexion réussie : " + username, Color.LIGHTGREEN);
             } else {
                 showMessage("Nom ou mot de passe incorrect.", Color.ORANGERED);
