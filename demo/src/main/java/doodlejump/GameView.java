@@ -5,6 +5,7 @@ import javafx.scene.canvas.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;         // NOUVEAU
 import javafx.scene.control.Label;       // NOUVEAU
+import javafx.scene.image.Image;
 import javafx.scene.control.Button;      // NOUVEAU
 import javafx.geometry.Pos;              // NOUVEAU
 import javafx.animation.AnimationTimer;
@@ -26,8 +27,13 @@ public class GameView extends Pane {
     private Set<String> input = new HashSet<>();
     Gooner goon = new Gooner(standX, standY);
 
+    private List<Bonus> bonuses = new ArrayList<>();
+    private double flyTimer = 0.0; // Temps de vol restant (en secondes)
+    private boolean isFlying = false;
+    private Image chapeauSkin = new Image(getClass().getResourceAsStream("/chapeau.png"));
+
     private double cameraY = 0;
-    private Random rand = new Random();
+    private Random rand = new Random(); 
     private GamePanel scorePanel;
     private App app;
     private VBox pauseMenu; // NOUVEAU : L'interface du menu pause
@@ -89,6 +95,15 @@ public class GameView extends Pane {
                 }
 
                 while (accumulator >= TIME_STEP) {
+                    if (isFlying) {
+                        flyTimer -= TIME_STEP; // TIME_STEP vaut 1/60e de seconde
+                        goon.velocityY = -8;   // Le personnage monte tout seul (vitesse constante)
+                        
+                        if (flyTimer <= 0) {
+                            isFlying = false;  // Fin du bonus après 5 secondes
+                        }
+                    }
+
                     if (!isGameOver) {
                         goon.update();
                         scorePanel.updateScore(goon.y);
@@ -179,6 +194,23 @@ public class GameView extends Pane {
                             scorePanel.setGameOver(true);
                         }
 
+                        // Mise à jour et collision des bonus
+                        for (Bonus b : bonuses) {
+                            b.update(); // Pour qu'il suive la plateforme si elle bouge
+
+                            // Collision simple (AABB) entre le Gooner et le Bonus
+                            if (!b.collected && goon.x < b.x + Bonus.WIDTH && goon.x + Gooner.w > b.x 
+                                && goon.y < b.y + Bonus.HEIGHT && goon.y + Gooner.h > b.y) {
+                                
+                                b.collected = true;
+                                isFlying = true;
+                                flyTimer = 3.0; // 3 secondes de vol !
+                            }
+                        }
+
+                        // Nettoyage des bonus ramassés ou hors écran
+                        bonuses.removeIf(b -> b.collected || b.y - cameraY > 600);
+
                         if (goon.y < cameraY + 350) {
                             cameraY = goon.y - 350;
                         }
@@ -209,11 +241,18 @@ public class GameView extends Pane {
 
                             if(cameraY < -6000) {
                                 int chance = rand.nextInt(100);
-                                if (chance < 25) fragile = true;      // 25% de chance d'être fragile
-                                else if (chance < 55) moving = true; // 30% de chance d'être mobile
-                                else if (chance < 65) ghost = true;   // 10% de chance d'être fantôme
+                                if (chance < 30) fragile = true;      // 30% de chance d'être fragile
+                                else if (chance < 70) moving = true; // 40% de chance d'être mobile
+                                else if (chance < 85) ghost = true;   // 15% de chance d'être fantôme
                             
-                            // Si on est à hauteur moyenne de -4000, seulement des fragiles   
+                            // Si on est à hauteur moyenne de -6000, des fragiles + des mobiles, et un peu de fantômes
+                            } else if (cameraY < -6000) {
+                                int chance = rand.nextInt(100);
+                                if (chance < 20) fragile = true;      // 20% de chance d'être fragile
+                                else if (chance < 30) moving = true; // 30% de chance d'être mobile
+                                else if (chance < 60) ghost = true;   // 10% de chance d'être fantôme
+                                
+                            // Si on est à hauteur moyenne de -4000, des fragiles + mobiles  
                             } else if (cameraY < -4000) {
                                 int chance = rand.nextInt(100);
                                 if (chance < 20) fragile = true;      // 20% de chance d'être fragile
@@ -224,7 +263,13 @@ public class GameView extends Pane {
                                 if (rand.nextInt(100) < 20) fragile = true;
                             }
 
-                            platforms.add(new Platform(x, y, fragile, moving, ghost));
+                            Platform newP = new Platform(x, y, fragile, moving, ghost);
+                            platforms.add(newP);
+
+                            //Si la plateforme n'est ni fragile, ni fantôme, on a 5% de chance d'y mettre un jetpack
+                            if (!fragile && !ghost && rand.nextInt(100) < 2) {
+                                bonuses.add(new Bonus(newP));
+                            }
                         }
 
                         //Spawn des monstres 
@@ -390,6 +435,10 @@ public class GameView extends Pane {
         generatePlatform(platforms);
         isGameOver = false;
         isPaused = false; // Par sécurité
+        isFlying = false;
+        flyTimer = 0.0;
+        bonuses.clear();
+        scorePanel.reset();
         scorePanel.reset();
     }
 
@@ -467,6 +516,18 @@ public class GameView extends Pane {
             gc.drawImage(goon.skin, goon.x, goon.y - cameraY, Gooner.w, Gooner.h);
         }
 
+        for (Bonus b : bonuses) {
+            if (!b.collected) {
+                gc.drawImage(b.skin, b.x, b.y - cameraY, Bonus.WIDTH, Bonus.HEIGHT);
+            }
+        }
+
+        if (isFlying) {
+            gc.setFill(Color.ORANGE);
+            gc.setFont(Font.font("Arial", 16));
+            gc.fillText("Mode Vol : " + String.format("%.1f", flyTimer) + "s", 10, 80);
+        }
+
         for (Monster m : monsters) {
             if (!m.isDead) {
                 // On dessine le skin du monstre à la place du rectangle
@@ -514,6 +575,26 @@ public class GameView extends Pane {
         } else {
             // Dessin normal
             gc.drawImage(goon.skin, x, y, Gooner.w, Gooner.h);
+        }
+
+        if (isFlying) {
+            // On récupère une image de bonus disponible pour avoir le skin (ou on utilise une variable dédiée)
+            // on décale le dessin pour le mettre sur sa tête.
+            double bonusW = Bonus.WIDTH;
+            double bonusH = Bonus.HEIGHT;
+            
+            // On centre le bonus horizontalement par rapport au Gooner, 
+            // et on le place juste au-dessus de sa tête (y - bonusH)
+            double bonusX = x + (Gooner.w / 2) - (bonusW / 2);
+            double bonusY = y - bonusH + 8; // +8 pour qu'il soit légèrement enfoncé sur sa tête (comme un chapeau)
+
+            if (goon.facingLeft) {
+                // Chapeau en miroir
+                gc.drawImage(chapeauSkin, bonusX + bonusW, bonusY, -bonusW, bonusH);
+            } else {
+                // Chapeau normal
+                gc.drawImage(chapeauSkin, bonusX, bonusY, bonusW, bonusH);
+            }
         }
     }
 }
