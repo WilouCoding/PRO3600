@@ -10,6 +10,7 @@ public class Gooner {
     public static final double GRAVITY = 0.06;
     public static final double w = 50;
     public static final double h =60;
+    public int coins = 0;
 
     public Image skin;
     public boolean facingLeft = false; // Pour savoir dans quelle direction le personnage regarde
@@ -19,7 +20,11 @@ public class Gooner {
         this.y=y;
         velocityY=0;
         velocityX=0;
-        this.skin = new Image(getClass().getResourceAsStream("/gooner_skin.png"));
+        try {
+            this.skin = new Image(getClass().getResourceAsStream("/gooner_skin.png"));
+        } catch (Exception e) {
+            System.out.println("Erreur lors du chargement de l'image : " + e.getMessage());
+        }
     }
     public void update(){
         velocityY+=GRAVITY;
