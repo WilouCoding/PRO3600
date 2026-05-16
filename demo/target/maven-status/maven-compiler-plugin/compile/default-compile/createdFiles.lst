@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+doodlejump/GameView$2.class
+doodlejump/Account$1.class
+=======
 doodlejump/CoinManager.class
 doodlejump/Coin.class
 doodlejump/GamePanel.class
@@ -13,3 +17,4 @@ doodlejump/HighScoreManager.class
 doodlejump/Bonus.class
 doodlejump/MainMenuView.class
 doodlejump/GameView.class
+>>>>>>> 518f8793df882c189d431b20d0bec692b234e11d

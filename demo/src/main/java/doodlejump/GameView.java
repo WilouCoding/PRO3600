@@ -11,6 +11,7 @@ import javafx.geometry.Pos;              // NOUVEAU
 import javafx.animation.AnimationTimer;
 import javafx.scene.input.KeyCode;
 import javafx.scene.text.Font;
+import javafx.scene.text.TextAlignment;
 
 import java.util.*;
 
@@ -39,10 +40,15 @@ public class GameView extends Pane {
     private Random rand = new Random(); 
     private GamePanel scorePanel;
     private App app;
+    private AccountManager accountManager;
+    private final String currentPlayerUsername;
+    private boolean highScoreSaved = false;
     private VBox pauseMenu; // NOUVEAU : L'interface du menu pause
 
-    public GameView(App app) {
+    public GameView(App app, String currentPlayerUsername) {
         this.app = app;
+        this.currentPlayerUsername = currentPlayerUsername;
+        this.accountManager = app.getAccountManager();
         this.setOnKeyPressed(e -> {
             input.add(e.getCode().toString());
         });
@@ -182,6 +188,7 @@ public class GameView extends Pane {
                                     isGameOver = true;
                                     saveCollectedCoins();
                                     scorePanel.setGameOver(true);
+                                    savePlayerHighScore();
                                 }
                             }
                         }
@@ -189,6 +196,7 @@ public class GameView extends Pane {
                             isGameOver = true;
                             saveCollectedCoins();
                             scorePanel.setGameOver(true);
+                            savePlayerHighScore();
                         }
 
                         // Collecte des pièces
@@ -461,6 +469,7 @@ public class GameView extends Pane {
         bonuses.clear();
         scorePanel.reset();
         goon.coins = 0;
+        highScoreSaved = false;
     }
 
     private void saveCollectedCoins() {
@@ -468,6 +477,20 @@ public class GameView extends Pane {
             coinManager.addCoins(goon.coins);
             goon.coins = 0;
         }
+    }
+
+    private void savePlayerHighScore() {
+        if (highScoreSaved) {
+            return;
+        }
+        if (currentPlayerUsername == null || currentPlayerUsername.isBlank()) {
+            return;
+        }
+        if (accountManager == null) {
+            return;
+        }
+        accountManager.updatePlayerScore(currentPlayerUsername, scorePanel.getScore());
+        highScoreSaved = true;
     }
 
     public void draw(Gooner goon, List<Platform> platforms) {
@@ -582,7 +605,9 @@ public class GameView extends Pane {
         }   
         gc.setFill(Color.YELLOW);
         gc.setFont(Font.font("Arial", 16));
-        gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 10, 80);
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 390, 30);
+        gc.setTextAlign(TextAlignment.LEFT);
     }
 
     public void generatePlatform(List<Platform> platforms) {
