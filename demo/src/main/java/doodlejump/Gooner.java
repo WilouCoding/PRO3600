@@ -44,11 +44,11 @@ public class Gooner {
     }
 
     public void moveLeft(){
-        velocityX-=0.8;
+        velocityX-=2;
     }
     
     public void moveRight(){
-        velocityX+=0.8;
+        velocityX+=2;
     }
     
     public void stopX(){

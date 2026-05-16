@@ -1,3 +1,4 @@
+doodlejump/CoinManager.class
 doodlejump/Coin.class
 doodlejump/GamePanel.class
 doodlejump/Bullet.class
@@ -9,5 +10,6 @@ module-info.class
 doodlejump/Monster.class
 doodlejump/App.class
 doodlejump/HighScoreManager.class
+doodlejump/Bonus.class
 doodlejump/MainMenuView.class
 doodlejump/GameView.class

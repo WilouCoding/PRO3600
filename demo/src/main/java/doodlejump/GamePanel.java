@@ -34,11 +34,10 @@ public class GamePanel extends Canvas {
 
     public void setGameOver(boolean gameOver) {
         this.isGameOver = gameOver;
-        
         if (gameOver) {
-            highScoreManager.addScore(score); 
+            highScoreManager.addScore(score);
         }
-        drawScreen(); 
+        drawScreen();
     }
 
     public void drawScreen() {
