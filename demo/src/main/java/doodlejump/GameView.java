@@ -24,10 +24,13 @@ public class GameView extends Pane {
     private List<Platform> platforms = new ArrayList<>();
     private List<Monster> monsters = new ArrayList<>();
     private List<Bullet> bullets = new ArrayList<>();
+    private List<Coin> coins = new ArrayList<>();
     private Set<String> input = new HashSet<>();
     Gooner goon = new Gooner(standX, standY);
-
+    public CoinManager coinManager = new CoinManager();
     private List<Bonus> bonuses = new ArrayList<>();
+    private int nextCoinScoreTarget = 200;
+    private static final int COIN_SCORE_STEP = 200;
     private double flyTimer = 0.0; // Temps de vol restant (en secondes)
     private boolean isFlying = false;
     private Image chapeauSkin = new Image(getClass().getResourceAsStream("/chapeau.png"));
@@ -67,14 +70,6 @@ public class GameView extends Pane {
             private final double TIME_STEP = 1.0 / 60.0; 
 
             public void handle(long now) {
-                if (input.contains("LEFT")) {
-                    goon.x -= 5;
-                    goon.facingLeft = true; // On change l'état ici !
-                } else if (input.contains("RIGHT")) {
-                    goon.x += 5;
-                    goon.facingLeft = false; // On change l'état ici !
-                }
-
                 if (lastTime == 0) {
                     lastTime = now;
                     return;
@@ -185,14 +180,34 @@ public class GameView extends Pane {
                                     goon.jump();
                                 } else {
                                     isGameOver = true;
+                                    saveCollectedCoins();
                                     scorePanel.setGameOver(true);
                                 }
                             }
                         }
                         if (goon.y > cameraY + 600) {
                             isGameOver = true;
+                            saveCollectedCoins();
                             scorePanel.setGameOver(true);
                         }
+
+                        // Collecte des pièces
+                        for (Coin c : coins) {
+                            if (c.collected) continue;
+                            boolean collected = false;
+                            for (double gx : xPositions) {
+                                if (gx < c.x + Coin.SIZE && gx + Gooner.w > c.x && goon.y < c.y + Coin.SIZE && goon.y + Gooner.h > c.y) {
+                                    collected = true;
+                                    break;
+                                }
+                            }
+                            if (collected) {
+                                c.collected = true;
+                                goon.coins++;
+                            }
+                        }
+
+                        coins.removeIf(c -> c.collected || c.y - cameraY > 600);
 
                         // Mise à jour et collision des bonus
                         for (Bonus b : bonuses) {
@@ -265,6 +280,11 @@ public class GameView extends Pane {
 
                             Platform newP = new Platform(x, y, fragile, moving, ghost);
                             platforms.add(newP);
+
+                            if (scorePanel.getScore() >= nextCoinScoreTarget) {
+                                coins.add(new Coin(x + Platform.WIDTH / 2 - Coin.SIZE / 2, y - Coin.SIZE - 10));
+                                nextCoinScoreTarget += COIN_SCORE_STEP;
+                            }
 
                             //Si la plateforme n'est ni fragile, ni fantôme, on a 5% de chance d'y mettre un jetpack
                             if (!fragile && !ghost && rand.nextInt(100) < 2) {
@@ -432,6 +452,7 @@ public class GameView extends Pane {
         platforms.clear();
         monsters.clear();
         bullets.clear();
+        coins.clear();
         generatePlatform(platforms);
         isGameOver = false;
         isPaused = false; // Par sécurité
@@ -439,7 +460,14 @@ public class GameView extends Pane {
         flyTimer = 0.0;
         bonuses.clear();
         scorePanel.reset();
-        scorePanel.reset();
+        goon.coins = 0;
+    }
+
+    private void saveCollectedCoins() {
+        if (goon.coins > 0) {
+            coinManager.addCoins(goon.coins);
+            goon.coins = 0;
+        }
     }
 
     public void draw(Gooner goon, List<Platform> platforms) {
@@ -548,6 +576,13 @@ public class GameView extends Pane {
                 gc.setGlobalAlpha(1.0);
             }
         }        
+        gc.setFill(Color.YELLOW);
+        for (Coin c : coins) {
+            gc.fillOval(c.x, c.y - cameraY, Coin.SIZE, Coin.SIZE);
+        }   
+        gc.setFill(Color.YELLOW);
+        gc.setFont(Font.font("Arial", 16));
+        gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 10, 80);
     }
 
     public void generatePlatform(List<Platform> platforms) {
@@ -565,6 +600,9 @@ public class GameView extends Pane {
             //On espace chaque plateforme de 60 à 120 pixels de la précédente
             highestY -= (60 + random.nextDouble() * 60); 
             platforms.add(new Platform(x, highestY, false, false, false));
+            if (random.nextInt(10000) < 30) {
+                coins.add(new Coin(x + Platform.WIDTH / 2 - Coin.SIZE / 2, highestY - Coin.SIZE - 10));
+            }
         }
     }
 
