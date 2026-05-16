@@ -531,18 +531,6 @@ public class GameView extends Pane {
         for (double y = offset; y < 600; y += gridSize) gc.strokeLine(0, y, 400, y);
         for (double x = 0; x < 400; x += gridSize) gc.strokeLine(x, 0, x, 600);
     
-        // Si le perso dépasse à droite, on dessine une copie à gauche
-        if (goon.x + Gooner.w > 400) {
-            drawGoonerWithOrientation(goon.x - 400, goon.y - cameraY);
-        } 
-        // Si le perso dépasse à gauche, on dessine une copie à droite
-        else if (goon.x < 0) {
-            drawGoonerWithOrientation(goon.x + 400, goon.y - cameraY);
-        }
-
-        // Dessin du personnage principal (toujours appelé)
-        drawGoonerWithOrientation(goon.x, goon.y - cameraY);
-
         for (Platform p : platforms) {
             if (p.isMoving) {
                 gc.setFill(Color.LIGHTBLUE); // Plateforme mobile
@@ -581,19 +569,39 @@ public class GameView extends Pane {
             }   
         }
 
+        // Si le perso dépasse à droite, on dessine une copie à gauche
+        if (goon.x + Gooner.w > 400) {
+            drawGoonerWithOrientation(goon.x - 400, goon.y - cameraY);
+        } 
+        // Si le perso dépasse à gauche, on dessine une copie à droite
+        else if (goon.x < 0) {
+            drawGoonerWithOrientation(goon.x + 400, goon.y - cameraY);
+        }
+
+        // Dessin du personnage principal (toujours appelé)
+        drawGoonerWithOrientation(goon.x, goon.y - cameraY);
+
         for (Bonus b : bonuses) {
             if (!b.collected) {
-                if (b.skin != null) {
-                    gc.drawImage(b.skin, b.x, b.y - cameraY, Bonus.WIDTH, Bonus.HEIGHT);
+                double visualScale = 1.6;
+                double visW = Bonus.WIDTH * visualScale;
+                double visH = Bonus.HEIGHT * visualScale;
+                double visX = b.x - (visW - Bonus.WIDTH) / 2.0;
+                double visY = b.y - cameraY - (visH - Bonus.HEIGHT) / 2.0;
+
+                if (b.skin != null && b.type == BonusType.TRAMPOLINE) {
+                    gc.drawImage(b.skin, visX, visY, visW, visH);
                 } else if (b.type == BonusType.TRAMPOLINE) {
                     gc.setFill(Color.CYAN);
-                    gc.fillRoundRect(b.x, b.y - cameraY, Bonus.WIDTH, Bonus.HEIGHT, 8, 8);
+                    gc.fillRoundRect(visX, visY, visW, visH, 8, 8);
                     gc.setStroke(Color.WHITE);
                     gc.setLineWidth(2);
-                    gc.strokeRoundRect(b.x + 2, b.y - cameraY + 2, Bonus.WIDTH - 4, Bonus.HEIGHT - 4, 6, 6);
+                    gc.strokeRoundRect(visX + 2, visY + 2, visW - 4, visH - 4, 6, 6);
                     gc.setFill(Color.WHITE);
                     gc.setFont(Font.font("Arial", 12));
-                    gc.fillText("T", b.x + Bonus.WIDTH / 2 - 4, b.y - cameraY + Bonus.HEIGHT / 2 + 4);
+                    gc.fillText("T", visX + visW / 2 - 4, visY + visH / 2 + 4);
+                } else if (b.skin != null) {
+                    gc.drawImage(b.skin, b.x, b.y - cameraY, Bonus.WIDTH, Bonus.HEIGHT);
                 } else if (b.type == BonusType.HAT) {
                     gc.setFill(Color.GOLD);
                     gc.fillOval(b.x, b.y - cameraY, Bonus.WIDTH, Bonus.HEIGHT);
