@@ -9,6 +9,7 @@ public class App extends Application {
 
     private Stage primaryStage;
     private StackPane root; // Conteneur principal
+    private final AccountManager accountManager = new AccountManager();
 
     @Override          
     public void start(Stage stage) {
@@ -26,8 +27,13 @@ public class App extends Application {
     }
 
     public void showMenu() {
-        MainMenuView menu = new MainMenuView(() -> startGame());
+        MainMenuView menu = new MainMenuView(() -> startGame(), this::showAccountMenu);
         root.getChildren().setAll(menu);
+    }
+
+    public void showAccountMenu() {
+        AccountMenuView accountMenu = new AccountMenuView(accountManager, this::showMenu);
+        root.getChildren().setAll(accountMenu);
     }
 
     public void startGame() {
