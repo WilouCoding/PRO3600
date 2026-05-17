@@ -1,6 +1,6 @@
    package doodlejump;
 
-import javafx.scene.paint.Color;
+import javafx.scene.paint.*;
 import javafx.scene.canvas.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;         // NOUVEAU
@@ -28,7 +28,7 @@ public class GameView extends Pane {
     private List<Bullet> bullets = new ArrayList<>();
     private List<Coin> coins = new ArrayList<>();
     private Set<String> input = new HashSet<>();
-    Gooner goon = new Gooner(standX, standY);
+    Gooner goon;
     public CoinManager coinManager = new CoinManager();
     private ShopManager shopManager;
     private List<Bonus> bonuses = new ArrayList<>();
@@ -47,6 +47,12 @@ public class GameView extends Pane {
         this.app = app;
         this.coinManager = coinManager;
         this.shopManager = shopManager;
+        ShopItem equippedSkin = shopManager.getEquippedSkin();
+        String skinResource = equippedSkin != null && equippedSkin.skinResource != null
+            ? equippedSkin.skinResource
+            : "/gooner_skin.png";
+        this.goon = new Gooner(standX, standY, skinResource);
+
         this.setOnKeyPressed(e -> {
             input.add(e.getCode().toString());
         });
@@ -475,19 +481,29 @@ public class GameView extends Pane {
         }
     }
 
+    public void generatePlatform(List<Platform> platforms) {
+        platforms.clear();
+        
+        //La plateforme de sécurité exacte sous les pieds du joueur
+        platforms.add(new Platform(standX, standY + Gooner.h + 100, false, false, false));
+
+        //Générer les 10 autres plateformes en montant progressivement
+        double highestY = standY + Gooner.h;
+        Random random = new Random();
+
+        for (int i = 1; i < 11; i++) {
+            double x = random.nextDouble() * (400 - Platform.WIDTH);
+            //On espace chaque plateforme de 60 à 120 pixels de la précédente
+            highestY -= (60 + random.nextDouble() * 60); 
+            platforms.add(new Platform(x, highestY, false, false, false));
+            if (random.nextInt(10000) < 30) {
+                coins.add(new Coin(x + Platform.WIDTH / 2 - Coin.SIZE / 2, highestY - Coin.SIZE - 10));
+            }
+        }
+    }
+
     public void draw(Gooner goon, List<Platform> platforms) {
-        // Fond
-        gc.setFill(Color.web("#0a0a1a")); 
-        gc.fillRect(0, 0, 400, 600);
-
-        gc.setStroke(Color.web("#1a1a3a"));
-        gc.setLineWidth(1.0);
-    
-        double gridSize = 40.0;
-        double offset = -(cameraY % gridSize); 
-
-        for (double y = offset; y < 600; y += gridSize) gc.strokeLine(0, y, 400, y);
-        for (double x = 0; x < 400; x += gridSize) gc.strokeLine(x, 0, x, 600);
+        drawSpaceBackground();
     
         // Si le perso dépasse à droite, on dessine une copie à gauche
         if (goon.x + Gooner.w > 400) {
@@ -589,25 +605,110 @@ public class GameView extends Pane {
         gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 390, 30);
         gc.setTextAlign(TextAlignment.LEFT);
     }
+//Création d'une méthode dédiée pour dessiner une pièce, ICI L'ARBRE DU FOND, pour éviter de surcharger la méthode draw
+    private void drawTreeBackground() {
+        double width = 400;
+        double height = 600;
 
-    public void generatePlatform(List<Platform> platforms) {
-        platforms.clear();
-        
-        //La plateforme de sécurité exacte sous les pieds du joueur
-        platforms.add(new Platform(standX, standY + Gooner.h + 100, false, false, false));
+        LinearGradient sky = new LinearGradient(
+            0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
+            new Stop(0.0, Color.web("#0c1710")),
+            new Stop(0.45, Color.web("#12261b")),
+            new Stop(1.0, Color.web("#0a140d"))
+        );
+        gc.setFill(sky);
+        gc.fillRect(0, 0, width, height);
 
-        //Générer les 10 autres plateformes en montant progressivement
-        double highestY = standY + Gooner.h;
-        Random random = new Random();
+        double trunkX = 130;
+        double trunkWidth = 140;
+        double segment = 160;
+        double offset = cameraY % segment;
+        if (offset > 0) offset -= segment;
 
-        for (int i = 1; i < 11; i++) {
-            double x = random.nextDouble() * (400 - Platform.WIDTH);
-            //On espace chaque plateforme de 60 à 120 pixels de la précédente
-            highestY -= (60 + random.nextDouble() * 60); 
-            platforms.add(new Platform(x, highestY, false, false, false));
-            if (random.nextInt(10000) < 30) {
-                coins.add(new Coin(x + Platform.WIDTH / 2 - Coin.SIZE / 2, highestY - Coin.SIZE - 10));
+        for (double y = offset - segment; y < height + segment; y += segment) {
+            gc.setFill(Color.web("#3f2a14"));
+            gc.fillRoundRect(trunkX, y, trunkWidth, segment + 40, 44, 44);
+
+            gc.setFill(Color.web("#523b1d"));
+            gc.fillOval(trunkX + 12, y + 18, 40, 12);
+            gc.fillOval(trunkX + 78, y + 58, 38, 14);
+            gc.fillOval(trunkX + 22, y + 105, 38, 12);
+
+            gc.setStroke(Color.web("#533915"));
+            gc.setLineWidth(2.2);
+            gc.strokeLine(trunkX + 36, y + 10, trunkX + 42, y + 70);
+            gc.strokeLine(trunkX + 88, y + 30, trunkX + 94, y + 85);
+            gc.strokeLine(trunkX + 60, y + 95, trunkX + 68, y + 140);
+        }
+
+        gc.setFill(Color.web("#1d2f1f", 0.9));
+        for (double y = offset; y < height + segment; y += 120) {
+            double branchY = y + 60;
+            gc.fillOval(trunkX - 140, branchY, 120, 48);
+            gc.fillOval(trunkX + trunkWidth + 20, branchY + 10, 120, 48);
+            gc.fillOval(trunkX - 110, branchY + 14, 90, 34);
+            gc.fillOval(trunkX + trunkWidth + 35, branchY + 24, 90, 34);
+        }
+
+        gc.setFill(Color.web("#0b1a0f", 0.7));
+        for (double x = 0; x < width; x += 45) {
+            gc.fillOval(x - 20, 20, 70, 40);
+            gc.fillOval(x + 10, 140, 80, 50);
+            gc.fillOval(x - 15, 320, 60, 30);
+            gc.fillOval(x + 20, 480, 70, 45);
+        }
+    }
+
+    private void drawSpaceBackground() {
+        double width = 400;
+        double height = 600;
+
+        Stop[] stops = new Stop[] {
+            new Stop(0.0, Color.web("#eff6ff")),
+            new Stop(0.35, Color.web("#d0e4ff")),
+            new Stop(0.75, Color.web("#a7c8ff")),
+            new Stop(1.0, Color.web("#7ea8ff"))
+        };
+        LinearGradient sky = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
+        gc.setFill(sky);
+        gc.fillRect(0, 0, width, height);
+
+        double offset = cameraY % 120;
+        if (offset > 0) offset -= 120;
+
+        for (double y = offset; y < height + 120; y += 40) {
+            for (double x = 15; x < width; x += 55) {
+                double size = 1.5 + (Math.abs((x + y) % 20) * 0.09);
+                gc.setFill(Color.web("#ffffff", 0.9));
+                gc.fillOval(x, y + (x % 30) * 0.33, size, size);
+                gc.setFill(Color.web("#dfe9ff", 0.55));
+                gc.fillOval(x + 5, y + 7 + (x % 17) * 0.22, size * 0.7, size * 0.7);
             }
+        }
+
+        for (int i = 0; i < 5; i++) {
+            double cx = 50 + i * 80;
+            double cy = 130 + (i % 2) * 110 + offset * 0.8;
+            RadialGradient nebula = new RadialGradient(
+                0, 0,
+                cx, cy,
+                90,
+                false,
+                CycleMethod.NO_CYCLE,
+                new Stop(0.0, Color.web("#ffffff", 0.7)),
+                new Stop(0.22, Color.web("#e8f1ff", 0.45)),
+                new Stop(0.55, Color.web("#b9d3ff", 0.18)),
+                new Stop(1.0, Color.web("#b9d3ff", 0.0))
+            );
+            gc.setFill(nebula);
+            gc.fillOval(cx - 80, cy - 55, 160, 110);
+        }
+
+        for (int i = 0; i < 4; i++) {
+            double cx = 90 + i * 95;
+            double cy = 80 + (i % 3) * 130 + offset * 0.6;
+            gc.setFill(Color.web("#f6f8ff", 0.35));
+            gc.fillOval(cx, cy, 110, 45);
         }
     }
 

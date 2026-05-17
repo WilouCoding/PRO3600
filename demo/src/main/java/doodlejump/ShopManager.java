@@ -14,16 +14,17 @@ public class ShopManager {
 
     private void initItems() {
         // Skins
-        items.add(new ShopItem("skin_default", "Skin Par défaut", 0,   "skin",  "#e0b998"));
-        items.add(new ShopItem("skin_bambino",    "Bambino",     5,  "skin",  "#000000"));
-        items.add(new ShopItem("skin_red",    "Skin Rouge",   50,  "skin",  "#e74c3c"));
-        items.add(new ShopItem("skin_green",  "Skin Vert",    50,  "skin",  "#2ecc71"));
-        items.add(new ShopItem("skin_gold",   "Skin Or",      200, "skin",  "#f1c40f"));
-        items.add(new ShopItem("skin_legend","Skin Legend", 500, "skin",  "#9b59b6"));
+        items.add(new ShopItem("skin_default", "Skin Par défaut", 0,   "skin",  "#e0b998", "/gooner_skin.png"));
+        items.add(new ShopItem("skin_bambino",    "Bambino",     5,  "skin",  "#000000", "/skin_noir.png"));
+        items.add(new ShopItem("skin_transparent",     "Transparentino",    15,  "skin",  "#ffffff", "/skin_transparent.png"));
+        items.add(new ShopItem("skin_red",    "Skin Rouge",   50,  "skin",  "#e74c3c", null));
+        items.add(new ShopItem("skin_green",  "Skin Vert",    50,  "skin",  "#2ecc71", null));
+        items.add(new ShopItem("skin_gold",   "Skin Or",      200, "skin",  "#f1c40f", null));
+        items.add(new ShopItem("skin_legend","Skin Legend", 500, "skin",  "#1e9dff", "/skin_legend.png"));
 
         // Powers 
-        items.add(new ShopItem("power_shield", "Bouclier",    100, "power", "#3498db"));
-        items.add(new ShopItem("power_magnet", "Aimant",      150, "power", "#f39c12"));
+        items.add(new ShopItem("power_shield", "Bouclier",    100, "power", "#3498db", null));
+        items.add(new ShopItem("power_magnet", "Aimant",      150, "power", "#f39c12", null));
     }
 
     public List<ShopItem> getItems() { return items; }
