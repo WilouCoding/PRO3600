@@ -1,6 +1,6 @@
    package doodlejump;
 
-import javafx.scene.paint.Color;
+import javafx.scene.paint.*;
 import javafx.scene.canvas.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;         // NOUVEAU
@@ -11,6 +11,7 @@ import javafx.geometry.Pos;              // NOUVEAU
 import javafx.animation.AnimationTimer;
 import javafx.scene.input.KeyCode;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 
 import java.util.*;
@@ -27,15 +28,15 @@ public class GameView extends Pane {
     private List<Bullet> bullets = new ArrayList<>();
     private List<Coin> coins = new ArrayList<>();
     private Set<String> input = new HashSet<>();
-    Gooner goon = new Gooner(standX, standY);
-    public CoinManager coinManager = new CoinManager();
+    Gooner goon;
+    private CoinManager coinManager;
+    private ShopManager shopManager;
     private List<Bonus> bonuses = new ArrayList<>();
     private int nextCoinScoreTarget = 200;
     private static final int COIN_SCORE_STEP = 200;
     private double flyTimer = 0.0; // Temps de vol restant (en secondes)
     private boolean isFlying = false;
     private Image chapeauSkin = new Image(getClass().getResourceAsStream("/chapeau.png"));
-
     private double cameraY = 0;
     private Random rand = new Random(); 
     private GamePanel scorePanel;
@@ -47,10 +48,19 @@ public class GameView extends Pane {
     private double trampolineFlipRemaining = 0.0;
     private VBox pauseMenu; // NOUVEAU : L'interface du menu pause
 
-    public GameView(App app, String currentPlayerUsername) {
+    public GameView(App app) {
         this.app = app;
-        this.currentPlayerUsername = currentPlayerUsername;
+        this.coinManager = app.getCoinManager();
+        this.shopManager = app.getShopManager();
         this.accountManager = app.getAccountManager();
+        this.currentPlayerUsername = app.getCurrentPlayerUsername();
+
+        ShopItem equippedSkin = shopManager.getEquippedSkin();
+        String skinResource = equippedSkin != null && equippedSkin.skinResource != null
+                ? equippedSkin.skinResource
+                : "/gooner_skin.png";
+        this.goon = new Gooner(standX, standY, skinResource);
+
         this.setOnKeyPressed(e -> {
             input.add(e.getCode().toString());
         });
@@ -224,6 +234,7 @@ public class GameView extends Pane {
                             if (collected) {
                                 c.collected = true;
                                 goon.coins++;
+                                coinManager.addCoins(1);
                             }
                         }
 
@@ -531,6 +542,18 @@ public class GameView extends Pane {
         for (double y = offset; y < 600; y += gridSize) gc.strokeLine(0, y, 400, y);
         for (double x = 0; x < 400; x += gridSize) gc.strokeLine(x, 0, x, 600);
     
+        // Si le perso dépasse à droite, on dessine une copie à gauche
+        if (goon.x + Gooner.w > 400) {
+            drawGoonerWithOrientation(goon.x - 400, goon.y - cameraY);
+        } 
+        // Si le perso dépasse à gauche, on dessine une copie à droite
+        else if (goon.x < 0) {
+            drawGoonerWithOrientation(goon.x + 400, goon.y - cameraY);
+        }
+
+        // Dessin du personnage principal (toujours appelé)
+        drawGoonerWithOrientation(goon.x, goon.y - cameraY);
+
         for (Platform p : platforms) {
             if (p.isMoving) {
                 gc.setFill(Color.LIGHTBLUE); // Plateforme mobile
@@ -635,14 +658,12 @@ public class GameView extends Pane {
                 gc.setGlobalAlpha(1.0);
             }
         }        
-        gc.setFill(Color.YELLOW);
         for (Coin c : coins) {
-            gc.fillOval(c.x, c.y - cameraY, Coin.SIZE, Coin.SIZE);
-        }   
-        gc.setFill(Color.YELLOW);
+            drawCoin(gc, c.x, c.y - cameraY, Coin.SIZE);
+        }
         gc.setFont(Font.font("Arial", 16));
-        gc.setTextAlign(TextAlignment.RIGHT);
-        gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 390, 30);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 10, 30);
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
@@ -703,4 +724,88 @@ public class GameView extends Pane {
             }
         }
     }
+
+    private void drawCoin(GraphicsContext gc, double x, double y, double size) {
+        double centerX = x + size / 2;
+        double centerY = y + size / 2;
+        double radius = size / 2;
+
+        // Ombre portée
+        gc.setFill(Color.color(0, 0, 0, 0.3));
+        gc.fillOval(x - 2, y + size * 0.6, size + 4, size * 0.3);
+
+        // Base dorée foncée (ombre du dessous)
+        gc.setFill(Color.web("#8B6914"));
+        gc.fillOval(x + 1, y + 1, size - 2, size - 2);
+
+        // Couche doée intermédiaire
+        gc.setFill(Color.web("#DAA520"));
+        gc.fillOval(x, y, size, size);
+
+        // Dégradé d'or vers le jaune clair (lumière principale)
+        gc.setFill(Color.web("#FFD700"));
+        gc.fillOval(x + 2, y + 2, size - 4, size - 4);
+
+        // Lumière réfléchie intense en haut-gauche
+        gc.setFill(Color.web("#FFED4E"));
+        gc.fillOval(x + size * 0.15, y + size * 0.15, size * 0.4, size * 0.35);
+
+        // Petite zone super brillante (reflet)
+        gc.setFill(Color.web("#FFFACD"));
+        gc.fillOval(x + size * 0.25, y + size * 0.2, size * 0.2, size * 0.2);
+
+        // Bordure en relief (double contour rétro)
+        gc.setStroke(Color.web("#B8860B"));
+        gc.setLineWidth(2);
+        gc.strokeOval(x + 1, y + 1, size - 2, size - 2);
+
+        gc.setStroke(Color.web("#DAA520"));
+        gc.setLineWidth(1);
+        gc.strokeOval(x, y, size, size);
+
+        // Stries circulaires pour l'effet "pièce de monnaie"
+        gc.setStroke(Color.web("#C4A200"));
+        gc.setLineWidth(0.5);
+        for (int i = 1; i <= 3; i++) {
+            double r = radius * (0.3 + i * 0.15);
+            gc.strokeOval(centerX - r, centerY - r, r * 2, r * 2);
+        }
+
+        // "G" en or foncé au centre (style gravure)
+        gc.setFill(Color.web("#000000"));
+        gc.setFont(Font.font("Arial", FontWeight.BOLD, size * 0.5));
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.fillText("G", centerX + 0.5, centerY + size * 0.15 + 0.5);
+
+        // "G" en or clair par-dessus (relief)
+        gc.setFill(Color.web("#2c0505"));
+        gc.fillText("G", centerX, centerY + size * 0.15);
+
+        gc.setTextAlign(TextAlignment.LEFT);
+    }
+
+    private void drawSpaceBackground() {
+        double width = 400;
+        double height = 600;
+
+        LinearGradient spaceGradient = new LinearGradient(
+            0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
+            new Stop(0.0, Color.web("#eff6ff")),
+            new Stop(0.35, Color.web("#d0e4ff")),
+            new Stop(0.75, Color.web("#a7c8ff")),
+            new Stop(1.0, Color.web("#7ea8ff"))
+        );
+
+        gc.setFill(spaceGradient);
+        gc.fillRect(0, 0, width, height);
+
+        gc.setFill(Color.web("#e5f2ff", 0.8));
+        for (int i = 0; i < 40; i++) {
+            double starX = rand.nextDouble() * width;
+            double starY = rand.nextDouble() * height;
+            double size = 1 + rand.nextDouble() * 2;
+            gc.fillOval(starX, starY, size, size);
+        }
+    }
+
 }

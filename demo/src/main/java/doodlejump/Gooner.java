@@ -8,24 +8,35 @@ public class Gooner {
     public double velocityY;
     public double velocityX;
     public static final double GRAVITY = 0.06;
+    public static final double MAX_SPEED_X = 6.0;
     public static final double w = 50;
-    public static final double h =60;
+    public static final double h = 60;
     public int coins = 0;
 
     public Image skin;
     public boolean facingLeft = false; // Pour savoir dans quelle direction le personnage regarde
 
     public Gooner(double x, double y){
-        this.x=x;
-        this.y=y;
-        velocityY=0;
-        velocityX=0;
+        this(x, y, "/gooner_skin.png");
+    }
+
+    public Gooner(double x, double y, String skinResource){
+        this.x = x;
+        this.y = y;
+        velocityY = 0;
+        velocityX = 0;
+        setSkin(skinResource);
+    }
+
+    public void setSkin(String skinResource) {
+        if (skinResource == null) return;
         try {
-            this.skin = new Image(getClass().getResourceAsStream("/gooner_skin.png"));
+            this.skin = new Image(getClass().getResourceAsStream(skinResource));
         } catch (Exception e) {
-            System.out.println("Erreur lors du chargement de l'image : " + e.getMessage());
+            System.out.println("Erreur lors du chargement du skin : " + e.getMessage());
         }
     }
+
     public void update(){
         velocityY+=GRAVITY;
         y+=velocityY;
@@ -44,15 +55,17 @@ public class Gooner {
     }
 
     public void moveLeft(){
-        velocityX-=2;
+        velocityX = Math.max(velocityX - 2, -MAX_SPEED_X);
+        facingLeft = true;
     }
     
     public void moveRight(){
-        velocityX+=2;
+        velocityX = Math.min(velocityX + 2, MAX_SPEED_X);
+        facingLeft = false;
     }
     
     public void stopX(){
-        velocityX=0;
+        velocityX = 0;
     }
     /*public double getx(){
         return x;

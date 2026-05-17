@@ -9,7 +9,7 @@ import javafx.scene.text.Font;
 
 public class MainMenuView extends VBox {
 
-    public MainMenuView(Runnable onPlayPressed, Runnable onAccountPressed) {
+    public MainMenuView(Runnable onPlayPressed, Runnable onShopPressed, Runnable onAccountPressed) {
         this.setSpacing(20);
         this.setAlignment(Pos.CENTER);
         this.setStyle("-fx-background-color: black;");
@@ -27,9 +27,9 @@ public class MainMenuView extends VBox {
         accountButton.setStyle("-fx-font-size: 18px; -fx-background-color: #444; -fx-text-fill: white;");
         accountButton.setOnAction(e -> onAccountPressed.run());
 
-        // Bouton Boutique (pour tes futurs cosmétiques)
-        Button shopButton = new Button("BOUTIQUE (Bientôt)");
-        shopButton.setDisable(true); 
+        Button shopButton = new Button("BOUTIQUE");
+        shopButton.setStyle("-fx-font-size: 18px; -fx-background-color: #ff8c00; -fx-text-fill: white;");
+        shopButton.setOnAction(e -> onShopPressed.run());
 
         this.getChildren().addAll(title, playButton, accountButton, shopButton);
     }

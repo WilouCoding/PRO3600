@@ -9,6 +9,8 @@ public class App extends Application {
 
     private Stage primaryStage;
     private StackPane root; // Conteneur principal
+    private CoinManager coinManager = new CoinManager(); // Gestionnaire de pièces
+    private ShopManager shopManager = new ShopManager(); // Gestionnaire de la boutique
     private final AccountManager accountManager = new AccountManager();
     private String currentPlayerUsername = null;
 
@@ -28,7 +30,7 @@ public class App extends Application {
     }
 
     public void showMenu() {
-        MainMenuView menu = new MainMenuView(() -> startGame(), this::showAccountMenu);
+        MainMenuView menu = new MainMenuView(() -> startGame(), this::showShop, this::showAccountMenu);
         root.getChildren().setAll(menu);
     }
 
@@ -38,7 +40,7 @@ public class App extends Application {
     }
 
     public void startGame() {
-        GameView gameView = new GameView(this, currentPlayerUsername); // On passe 'this' pour pouvoir revenir au menu
+        GameView gameView = new GameView(this); // On passe 'this' pour pouvoir revenir au menu
         root.getChildren().setAll(gameView);
         
         // On redonne le focus au clavier pour le jeu
@@ -62,7 +64,20 @@ public class App extends Application {
         return accountManager;
     }
 
+    public CoinManager getCoinManager() {
+        return coinManager;
+    }
+
+    public ShopManager getShopManager() {
+        return shopManager;
+    }
+
     public static void main(String[] args) {
         launch();
+    }
+
+    public void showShop() {
+        ShopView shopView = new ShopView(this, coinManager, shopManager);
+        root.getChildren().setAll(shopView);
     }
 }
