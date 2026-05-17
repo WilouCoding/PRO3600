@@ -29,7 +29,7 @@ public class GameView extends Pane {
     private List<Coin> coins = new ArrayList<>();
     private Set<String> input = new HashSet<>();
     Gooner goon;
-    public CoinManager coinManager = new CoinManager();
+    private CoinManager coinManager;
     private ShopManager shopManager;
     private List<Bonus> bonuses = new ArrayList<>();
     private int nextCoinScoreTarget = 200;
@@ -41,16 +41,24 @@ public class GameView extends Pane {
     private Random rand = new Random(); 
     private GamePanel scorePanel;
     private App app;
+    private AccountManager accountManager;
+    private final String currentPlayerUsername;
+    private boolean highScoreSaved = false;
+    private double trampolineFlipAngle = 0.0;
+    private double trampolineFlipRemaining = 0.0;
     private VBox pauseMenu; // NOUVEAU : L'interface du menu pause
 
-    public GameView(App app, CoinManager coinManager, ShopManager shopManager) {
+    public GameView(App app) {
         this.app = app;
-        this.coinManager = coinManager;
-        this.shopManager = shopManager;
+        this.coinManager = app.getCoinManager();
+        this.shopManager = app.getShopManager();
+        this.accountManager = app.getAccountManager();
+        this.currentPlayerUsername = app.getCurrentPlayerUsername();
+
         ShopItem equippedSkin = shopManager.getEquippedSkin();
         String skinResource = equippedSkin != null && equippedSkin.skinResource != null
-            ? equippedSkin.skinResource
-            : "/gooner_skin.png";
+                ? equippedSkin.skinResource
+                : "/gooner_skin.png";
         this.goon = new Gooner(standX, standY, skinResource);
 
         this.setOnKeyPressed(e -> {
@@ -106,6 +114,16 @@ public class GameView extends Pane {
                         
                         if (flyTimer <= 0) {
                             isFlying = false;  // Fin du bonus après 5 secondes
+                        }
+                    }
+
+                    if (trampolineFlipRemaining > 0) {
+                        double deltaAngle = 720.0 * TIME_STEP;
+                        trampolineFlipAngle += deltaAngle;
+                        trampolineFlipRemaining -= deltaAngle;
+                        if (trampolineFlipRemaining <= 0) {
+                            trampolineFlipRemaining = 0;
+                            trampolineFlipAngle = 0;
                         }
                     }
 
@@ -192,6 +210,7 @@ public class GameView extends Pane {
                                     isGameOver = true;
                                     saveCollectedCoins();
                                     scorePanel.setGameOver(true);
+                                    savePlayerHighScore();
                                 }
                             }
                         }
@@ -199,6 +218,7 @@ public class GameView extends Pane {
                             isGameOver = true;
                             saveCollectedCoins();
                             scorePanel.setGameOver(true);
+                            savePlayerHighScore();
                         }
 
                         // Collecte des pièces
@@ -227,10 +247,16 @@ public class GameView extends Pane {
                             // Collision simple (AABB) entre le Gooner et le Bonus
                             if (!b.collected && goon.x < b.x + Bonus.WIDTH && goon.x + Gooner.w > b.x 
                                 && goon.y < b.y + Bonus.HEIGHT && goon.y + Gooner.h > b.y) {
-                                
-                                b.collected = true;
-                                isFlying = true;
-                                flyTimer = 3.0; // 3 secondes de vol !
+                                if (b.type == BonusType.HAT) {
+                                    b.collected = true;
+                                    isFlying = true;
+                                    flyTimer = 3.0; // 3 secondes de vol !
+                                } else if (b.type == BonusType.TRAMPOLINE && goon.velocityY > 0) {
+                                    b.collected = true;
+                                    goon.velocityY = -15.0;
+                                    trampolineFlipRemaining = 360.0;
+                                    trampolineFlipAngle = 0.0;
+                                }
                             }
                         }
 
@@ -297,9 +323,15 @@ public class GameView extends Pane {
                                 nextCoinScoreTarget += COIN_SCORE_STEP;
                             }
 
-                            //Si la plateforme n'est ni fragile, ni fantôme, on a 5% de chance d'y mettre un jetpack
-                            if (!fragile && !ghost && rand.nextInt(100) < 2) {
-                                bonuses.add(new Bonus(newP));
+                            //Si la plateforme n'est ni fragile, ni fantôme, on a 2% de chance d'y mettre un chapeau
+                            //et 2% de chance d'y mettre un trampoline, jamais les deux sur la même plateforme.
+                            if (!fragile && !ghost) {
+                                int bonusChance = rand.nextInt(100);
+                                if (bonusChance < 4) {
+                                    bonuses.add(new Bonus(newP, BonusType.HAT));
+                                } else if (bonusChance < 8) {
+                                    bonuses.add(new Bonus(newP, BonusType.TRAMPOLINE));
+                                }
                             }
                         }
 
@@ -472,6 +504,7 @@ public class GameView extends Pane {
         bonuses.clear();
         scorePanel.reset();
         goon.coins = 0;
+        highScoreSaved = false;
     }
 
     private void saveCollectedCoins() {
@@ -481,29 +514,33 @@ public class GameView extends Pane {
         }
     }
 
-    public void generatePlatform(List<Platform> platforms) {
-        platforms.clear();
-        
-        //La plateforme de sécurité exacte sous les pieds du joueur
-        platforms.add(new Platform(standX, standY + Gooner.h + 100, false, false, false));
-
-        //Générer les 10 autres plateformes en montant progressivement
-        double highestY = standY + Gooner.h;
-        Random random = new Random();
-
-        for (int i = 1; i < 11; i++) {
-            double x = random.nextDouble() * (400 - Platform.WIDTH);
-            //On espace chaque plateforme de 60 à 120 pixels de la précédente
-            highestY -= (60 + random.nextDouble() * 60); 
-            platforms.add(new Platform(x, highestY, false, false, false));
-            if (random.nextInt(10000) < 30) {
-                coins.add(new Coin(x + Platform.WIDTH / 2 - Coin.SIZE / 2, highestY - Coin.SIZE - 10));
-            }
+    private void savePlayerHighScore() {
+        if (highScoreSaved) {
+            return;
         }
+        if (currentPlayerUsername == null || currentPlayerUsername.isBlank()) {
+            return;
+        }
+        if (accountManager == null) {
+            return;
+        }
+        accountManager.updatePlayerScore(currentPlayerUsername, scorePanel.getScore());
+        highScoreSaved = true;
     }
 
     public void draw(Gooner goon, List<Platform> platforms) {
-        drawSpaceBackground();
+        // Fond
+        gc.setFill(Color.web("#0a0a1a")); 
+        gc.fillRect(0, 0, 400, 600);
+
+        gc.setStroke(Color.web("#1a1a3a"));
+        gc.setLineWidth(1.0);
+    
+        double gridSize = 40.0;
+        double offset = -(cameraY % gridSize); 
+
+        for (double y = offset; y < 600; y += gridSize) gc.strokeLine(0, y, 400, y);
+        for (double x = 0; x < 400; x += gridSize) gc.strokeLine(x, 0, x, 600);
     
         // Si le perso dépasse à droite, on dessine une copie à gauche
         if (goon.x + Gooner.w > 400) {
@@ -554,20 +591,44 @@ public class GameView extends Pane {
                 gc.strokeLine(midX + 5, midY + 6, midX - 5, midY + 10);
             }   
         }
-        
-        if (goon.facingLeft) {
-            // On dessine l'image inversée
-            // x + w : on décale le point de départ à droite
-            // -w : on dessine vers la gauche pour créer l'effet miroir
-            gc.drawImage(goon.skin, goon.x + Gooner.w, goon.y - cameraY, -Gooner.w, Gooner.h);
-        } else {
-            // Dessin normal vers la droite
-            gc.drawImage(goon.skin, goon.x, goon.y - cameraY, Gooner.w, Gooner.h);
+
+        // Si le perso dépasse à droite, on dessine une copie à gauche
+        if (goon.x + Gooner.w > 400) {
+            drawGoonerWithOrientation(goon.x - 400, goon.y - cameraY);
+        } 
+        // Si le perso dépasse à gauche, on dessine une copie à droite
+        else if (goon.x < 0) {
+            drawGoonerWithOrientation(goon.x + 400, goon.y - cameraY);
         }
+
+        // Dessin du personnage principal (toujours appelé)
+        drawGoonerWithOrientation(goon.x, goon.y - cameraY);
 
         for (Bonus b : bonuses) {
             if (!b.collected) {
-                gc.drawImage(b.skin, b.x, b.y - cameraY, Bonus.WIDTH, Bonus.HEIGHT);
+                double visualScale = 1.6;
+                double visW = Bonus.WIDTH * visualScale;
+                double visH = Bonus.HEIGHT * visualScale;
+                double visX = b.x - (visW - Bonus.WIDTH) / 2.0;
+                double visY = b.y - cameraY - (visH - Bonus.HEIGHT) / 2.0;
+
+                if (b.skin != null && b.type == BonusType.TRAMPOLINE) {
+                    gc.drawImage(b.skin, visX, visY, visW, visH);
+                } else if (b.type == BonusType.TRAMPOLINE) {
+                    gc.setFill(Color.CYAN);
+                    gc.fillRoundRect(visX, visY, visW, visH, 8, 8);
+                    gc.setStroke(Color.WHITE);
+                    gc.setLineWidth(2);
+                    gc.strokeRoundRect(visX + 2, visY + 2, visW - 4, visH - 4, 6, 6);
+                    gc.setFill(Color.WHITE);
+                    gc.setFont(Font.font("Arial", 12));
+                    gc.fillText("T", visX + visW / 2 - 4, visY + visH / 2 + 4);
+                } else if (b.skin != null) {
+                    gc.drawImage(b.skin, b.x, b.y - cameraY, Bonus.WIDTH, Bonus.HEIGHT);
+                } else if (b.type == BonusType.HAT) {
+                    gc.setFill(Color.GOLD);
+                    gc.fillOval(b.x, b.y - cameraY, Bonus.WIDTH, Bonus.HEIGHT);
+                }
             }
         }
 
@@ -601,125 +662,47 @@ public class GameView extends Pane {
             drawCoin(gc, c.x, c.y - cameraY, Coin.SIZE);
         }
         gc.setFont(Font.font("Arial", 16));
-        gc.setTextAlign(TextAlignment.RIGHT);
-        gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 390, 30);
+        gc.setTextAlign(TextAlignment.LEFT);
+        gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 10, 30);
         gc.setTextAlign(TextAlignment.LEFT);
     }
-//Création d'une méthode dédiée pour dessiner une pièce, ICI L'ARBRE DU FOND, pour éviter de surcharger la méthode draw
-    private void drawTreeBackground() {
-        double width = 400;
-        double height = 600;
 
-        LinearGradient sky = new LinearGradient(
-            0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
-            new Stop(0.0, Color.web("#0c1710")),
-            new Stop(0.45, Color.web("#12261b")),
-            new Stop(1.0, Color.web("#0a140d"))
-        );
-        gc.setFill(sky);
-        gc.fillRect(0, 0, width, height);
+    public void generatePlatform(List<Platform> platforms) {
+        platforms.clear();
+        
+        //La plateforme de sécurité exacte sous les pieds du joueur
+        platforms.add(new Platform(standX, standY + Gooner.h + 100, false, false, false));
 
-        double trunkX = 130;
-        double trunkWidth = 140;
-        double segment = 160;
-        double offset = cameraY % segment;
-        if (offset > 0) offset -= segment;
+        //Générer les 10 autres plateformes en montant progressivement
+        double highestY = standY + Gooner.h;
+        Random random = new Random();
 
-        for (double y = offset - segment; y < height + segment; y += segment) {
-            gc.setFill(Color.web("#3f2a14"));
-            gc.fillRoundRect(trunkX, y, trunkWidth, segment + 40, 44, 44);
-
-            gc.setFill(Color.web("#523b1d"));
-            gc.fillOval(trunkX + 12, y + 18, 40, 12);
-            gc.fillOval(trunkX + 78, y + 58, 38, 14);
-            gc.fillOval(trunkX + 22, y + 105, 38, 12);
-
-            gc.setStroke(Color.web("#533915"));
-            gc.setLineWidth(2.2);
-            gc.strokeLine(trunkX + 36, y + 10, trunkX + 42, y + 70);
-            gc.strokeLine(trunkX + 88, y + 30, trunkX + 94, y + 85);
-            gc.strokeLine(trunkX + 60, y + 95, trunkX + 68, y + 140);
-        }
-
-        gc.setFill(Color.web("#1d2f1f", 0.9));
-        for (double y = offset; y < height + segment; y += 120) {
-            double branchY = y + 60;
-            gc.fillOval(trunkX - 140, branchY, 120, 48);
-            gc.fillOval(trunkX + trunkWidth + 20, branchY + 10, 120, 48);
-            gc.fillOval(trunkX - 110, branchY + 14, 90, 34);
-            gc.fillOval(trunkX + trunkWidth + 35, branchY + 24, 90, 34);
-        }
-
-        gc.setFill(Color.web("#0b1a0f", 0.7));
-        for (double x = 0; x < width; x += 45) {
-            gc.fillOval(x - 20, 20, 70, 40);
-            gc.fillOval(x + 10, 140, 80, 50);
-            gc.fillOval(x - 15, 320, 60, 30);
-            gc.fillOval(x + 20, 480, 70, 45);
-        }
-    }
-
-    private void drawSpaceBackground() {
-        double width = 400;
-        double height = 600;
-
-        Stop[] stops = new Stop[] {
-            new Stop(0.0, Color.web("#eff6ff")),
-            new Stop(0.35, Color.web("#d0e4ff")),
-            new Stop(0.75, Color.web("#a7c8ff")),
-            new Stop(1.0, Color.web("#7ea8ff"))
-        };
-        LinearGradient sky = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
-        gc.setFill(sky);
-        gc.fillRect(0, 0, width, height);
-
-        double offset = cameraY % 120;
-        if (offset > 0) offset -= 120;
-
-        for (double y = offset; y < height + 120; y += 40) {
-            for (double x = 15; x < width; x += 55) {
-                double size = 1.5 + (Math.abs((x + y) % 20) * 0.09);
-                gc.setFill(Color.web("#ffffff", 0.9));
-                gc.fillOval(x, y + (x % 30) * 0.33, size, size);
-                gc.setFill(Color.web("#dfe9ff", 0.55));
-                gc.fillOval(x + 5, y + 7 + (x % 17) * 0.22, size * 0.7, size * 0.7);
+        for (int i = 1; i < 11; i++) {
+            double x = random.nextDouble() * (400 - Platform.WIDTH);
+            //On espace chaque plateforme de 60 à 120 pixels de la précédente
+            highestY -= (60 + random.nextDouble() * 60); 
+            platforms.add(new Platform(x, highestY, false, false, false));
+            if (random.nextInt(10000) < 30) {
+                coins.add(new Coin(x + Platform.WIDTH / 2 - Coin.SIZE / 2, highestY - Coin.SIZE - 10));
             }
-        }
-
-        for (int i = 0; i < 5; i++) {
-            double cx = 50 + i * 80;
-            double cy = 130 + (i % 2) * 110 + offset * 0.8;
-            RadialGradient nebula = new RadialGradient(
-                0, 0,
-                cx, cy,
-                90,
-                false,
-                CycleMethod.NO_CYCLE,
-                new Stop(0.0, Color.web("#ffffff", 0.7)),
-                new Stop(0.22, Color.web("#e8f1ff", 0.45)),
-                new Stop(0.55, Color.web("#b9d3ff", 0.18)),
-                new Stop(1.0, Color.web("#b9d3ff", 0.0))
-            );
-            gc.setFill(nebula);
-            gc.fillOval(cx - 80, cy - 55, 160, 110);
-        }
-
-        for (int i = 0; i < 4; i++) {
-            double cx = 90 + i * 95;
-            double cy = 80 + (i % 3) * 130 + offset * 0.6;
-            gc.setFill(Color.web("#f6f8ff", 0.35));
-            gc.fillOval(cx, cy, 110, 45);
         }
     }
 
     private void drawGoonerWithOrientation(double x, double y) {
-        if (goon.facingLeft) {
-            // Dessin inversé (Miroir) : on décale de 'w' et on dessine sur '-w'
-            gc.drawImage(goon.skin, x + Gooner.w, y, -Gooner.w, Gooner.h);
-        } else {
-            // Dessin normal
-            gc.drawImage(goon.skin, x, y, Gooner.w, Gooner.h);
+        gc.save();
+        double centerX = x + Gooner.w / 2.0;
+        double centerY = y + Gooner.h / 2.0;
+        gc.translate(centerX, centerY);
+        if (trampolineFlipRemaining > 0) {
+            gc.rotate(trampolineFlipAngle);
         }
+
+        if (goon.facingLeft) {
+            gc.drawImage(goon.skin, Gooner.w / -2.0, -Gooner.h / 2.0, -Gooner.w, Gooner.h);
+        } else {
+            gc.drawImage(goon.skin, -Gooner.w / 2.0, -Gooner.h / 2.0, Gooner.w, Gooner.h);
+        }
+        gc.restore();
 
         if (isFlying) {
             // On récupère une image de bonus disponible pour avoir le skin (ou on utilise une variable dédiée)
@@ -801,5 +784,28 @@ public class GameView extends Pane {
         gc.setTextAlign(TextAlignment.LEFT);
     }
 
+    private void drawSpaceBackground() {
+        double width = 400;
+        double height = 600;
+
+        LinearGradient spaceGradient = new LinearGradient(
+            0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
+            new Stop(0.0, Color.web("#eff6ff")),
+            new Stop(0.35, Color.web("#d0e4ff")),
+            new Stop(0.75, Color.web("#a7c8ff")),
+            new Stop(1.0, Color.web("#7ea8ff"))
+        );
+
+        gc.setFill(spaceGradient);
+        gc.fillRect(0, 0, width, height);
+
+        gc.setFill(Color.web("#e5f2ff", 0.8));
+        for (int i = 0; i < 40; i++) {
+            double starX = rand.nextDouble() * width;
+            double starY = rand.nextDouble() * height;
+            double size = 1 + rand.nextDouble() * 2;
+            gc.fillOval(starX, starY, size, size);
+        }
+    }
 
 }
