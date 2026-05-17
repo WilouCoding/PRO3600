@@ -9,7 +9,7 @@ import javafx.scene.text.Font;
 
 public class MainMenuView extends VBox {
 
-    public MainMenuView(Runnable onPlayPressed) {
+    public MainMenuView(Runnable onPlayPressed, Runnable onShopPressed) {
         this.setSpacing(20);
         this.setAlignment(Pos.CENTER);
         this.setStyle("-fx-background-color: black;");
@@ -28,5 +28,8 @@ public class MainMenuView extends VBox {
         shopButton.setDisable(true); 
 
         this.getChildren().addAll(title, playButton, shopButton);
+
+        shopButton.setDisable(false);
+        shopButton.setOnAction(e -> onShopPressed.run());
     }
 }

@@ -1,14 +1,17 @@
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/Bonus.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/GameView.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/ShopManager.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/Bullet.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/Coin.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/HighScoreManager.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/Gooner.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/Platform.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/GameLoop.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/ShopItem.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/App.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/CoinManager.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/GamePanel.java
+/home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/ShopView.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/module-info.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/MainMenuView.java
 /home/william/Documents/ProjetDev/PRO3600/demo/src/main/java/doodlejump/Monster.java

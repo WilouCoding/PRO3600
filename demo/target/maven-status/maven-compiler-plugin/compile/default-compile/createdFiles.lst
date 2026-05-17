@@ -1,8 +1,11 @@
 doodlejump/CoinManager.class
 doodlejump/Coin.class
 doodlejump/GamePanel.class
+doodlejump/ShopItem.class
+doodlejump/ShopManager.class
 doodlejump/Bullet.class
 doodlejump/GameView$2.class
+doodlejump/ShopView.class
 doodlejump/Gooner.class
 doodlejump/GameView$1.class
 doodlejump/Platform.class

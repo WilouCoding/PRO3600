@@ -11,6 +11,8 @@ import javafx.geometry.Pos;              // NOUVEAU
 import javafx.animation.AnimationTimer;
 import javafx.scene.input.KeyCode;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
 
 import java.util.*;
 
@@ -28,21 +30,23 @@ public class GameView extends Pane {
     private Set<String> input = new HashSet<>();
     Gooner goon = new Gooner(standX, standY);
     public CoinManager coinManager = new CoinManager();
+    private ShopManager shopManager;
     private List<Bonus> bonuses = new ArrayList<>();
     private int nextCoinScoreTarget = 200;
     private static final int COIN_SCORE_STEP = 200;
     private double flyTimer = 0.0; // Temps de vol restant (en secondes)
     private boolean isFlying = false;
     private Image chapeauSkin = new Image(getClass().getResourceAsStream("/chapeau.png"));
-
     private double cameraY = 0;
     private Random rand = new Random(); 
     private GamePanel scorePanel;
     private App app;
     private VBox pauseMenu; // NOUVEAU : L'interface du menu pause
 
-    public GameView(App app) {
+    public GameView(App app, CoinManager coinManager, ShopManager shopManager) {
         this.app = app;
+        this.coinManager = coinManager;
+        this.shopManager = shopManager;
         this.setOnKeyPressed(e -> {
             input.add(e.getCode().toString());
         });
@@ -204,6 +208,7 @@ public class GameView extends Pane {
                             if (collected) {
                                 c.collected = true;
                                 goon.coins++;
+                                coinManager.addCoins(1);
                             }
                         }
 
@@ -576,13 +581,13 @@ public class GameView extends Pane {
                 gc.setGlobalAlpha(1.0);
             }
         }        
-        gc.setFill(Color.YELLOW);
         for (Coin c : coins) {
-            gc.fillOval(c.x, c.y - cameraY, Coin.SIZE, Coin.SIZE);
-        }   
-        gc.setFill(Color.YELLOW);
+            drawCoin(gc, c.x, c.y - cameraY, Coin.SIZE);
+        }
         gc.setFont(Font.font("Arial", 16));
-        gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 10, 80);
+        gc.setTextAlign(TextAlignment.RIGHT);
+        gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 390, 30);
+        gc.setTextAlign(TextAlignment.LEFT);
     }
 
     public void generatePlatform(List<Platform> platforms) {
@@ -635,4 +640,65 @@ public class GameView extends Pane {
             }
         }
     }
+
+    private void drawCoin(GraphicsContext gc, double x, double y, double size) {
+        double centerX = x + size / 2;
+        double centerY = y + size / 2;
+        double radius = size / 2;
+
+        // Ombre portée
+        gc.setFill(Color.color(0, 0, 0, 0.3));
+        gc.fillOval(x - 2, y + size * 0.6, size + 4, size * 0.3);
+
+        // Base dorée foncée (ombre du dessous)
+        gc.setFill(Color.web("#8B6914"));
+        gc.fillOval(x + 1, y + 1, size - 2, size - 2);
+
+        // Couche doée intermédiaire
+        gc.setFill(Color.web("#DAA520"));
+        gc.fillOval(x, y, size, size);
+
+        // Dégradé d'or vers le jaune clair (lumière principale)
+        gc.setFill(Color.web("#FFD700"));
+        gc.fillOval(x + 2, y + 2, size - 4, size - 4);
+
+        // Lumière réfléchie intense en haut-gauche
+        gc.setFill(Color.web("#FFED4E"));
+        gc.fillOval(x + size * 0.15, y + size * 0.15, size * 0.4, size * 0.35);
+
+        // Petite zone super brillante (reflet)
+        gc.setFill(Color.web("#FFFACD"));
+        gc.fillOval(x + size * 0.25, y + size * 0.2, size * 0.2, size * 0.2);
+
+        // Bordure en relief (double contour rétro)
+        gc.setStroke(Color.web("#B8860B"));
+        gc.setLineWidth(2);
+        gc.strokeOval(x + 1, y + 1, size - 2, size - 2);
+
+        gc.setStroke(Color.web("#DAA520"));
+        gc.setLineWidth(1);
+        gc.strokeOval(x, y, size, size);
+
+        // Stries circulaires pour l'effet "pièce de monnaie"
+        gc.setStroke(Color.web("#C4A200"));
+        gc.setLineWidth(0.5);
+        for (int i = 1; i <= 3; i++) {
+            double r = radius * (0.3 + i * 0.15);
+            gc.strokeOval(centerX - r, centerY - r, r * 2, r * 2);
+        }
+
+        // "G" en or foncé au centre (style gravure)
+        gc.setFill(Color.web("#000000"));
+        gc.setFont(Font.font("Arial", FontWeight.BOLD, size * 0.5));
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.fillText("G", centerX + 0.5, centerY + size * 0.15 + 0.5);
+
+        // "G" en or clair par-dessus (relief)
+        gc.setFill(Color.web("#2c0505"));
+        gc.fillText("G", centerX, centerY + size * 0.15);
+
+        gc.setTextAlign(TextAlignment.LEFT);
+    }
+
+
 }
