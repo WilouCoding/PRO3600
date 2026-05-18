@@ -31,6 +31,8 @@ public class GameView extends Pane {
     Gooner goon;
     public CoinManager coinManager = new CoinManager();
     private ShopManager shopManager;
+    private AccountManager accountManager;
+    private final String currentPlayerUsername;
     private List<Bonus> bonuses = new ArrayList<>();
     private int nextCoinScoreTarget = 200;
     private static final int COIN_SCORE_STEP = 200;
@@ -43,10 +45,12 @@ public class GameView extends Pane {
     private App app;
     private VBox pauseMenu; // NOUVEAU : L'interface du menu pause
 
-    public GameView(App app, CoinManager coinManager, ShopManager shopManager) {
+    public GameView(App app, CoinManager coinManager, ShopManager shopManager, String currentPlayerUsername, AccountManager accountManager) {
         this.app = app;
         this.coinManager = coinManager;
         this.shopManager = shopManager;
+        this.currentPlayerUsername = currentPlayerUsername;
+        this.accountManager = accountManager;
         ShopItem equippedSkin = shopManager.getEquippedSkin();
         String skinResource = equippedSkin != null && equippedSkin.skinResource != null
             ? equippedSkin.skinResource
@@ -191,6 +195,7 @@ public class GameView extends Pane {
                                 } else {
                                     isGameOver = true;
                                     saveCollectedCoins();
+                                    savePlayerHighScore();
                                     scorePanel.setGameOver(true);
                                 }
                             }
@@ -198,6 +203,7 @@ public class GameView extends Pane {
                         if (goon.y > cameraY + 600) {
                             isGameOver = true;
                             saveCollectedCoins();
+                            savePlayerHighScore();
                             scorePanel.setGameOver(true);
                         }
 
@@ -478,6 +484,15 @@ public class GameView extends Pane {
         if (goon.coins > 0) {
             coinManager.addCoins(goon.coins);
             goon.coins = 0;
+        }
+    }
+
+    private void savePlayerHighScore() {
+        if (currentPlayerUsername == null || currentPlayerUsername.isBlank()) {
+            return;
+        }
+        if (accountManager != null) {
+            accountManager.updatePlayerScore(currentPlayerUsername, scorePanel.getScore());
         }
     }
 
