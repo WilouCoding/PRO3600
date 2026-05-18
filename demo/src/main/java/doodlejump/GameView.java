@@ -38,6 +38,8 @@ public class GameView extends Pane {
     private static final int COIN_SCORE_STEP = 200;
     private double flyTimer = 0.0; // Temps de vol restant (en secondes)
     private boolean isFlying = false;
+    private double trampolineFlipAngle = 0.0;
+    private double trampolineFlipRemaining = 0.0;
     private Image chapeauSkin = new Image(getClass().getResourceAsStream("/chapeau.png"));
     private double cameraY = 0;
     private Random rand = new Random(); 
@@ -110,6 +112,16 @@ public class GameView extends Pane {
                         
                         if (flyTimer <= 0) {
                             isFlying = false;  // Fin du bonus après 5 secondes
+                        }
+                    }
+
+                    if (trampolineFlipRemaining > 0) {
+                        double deltaAngle = 720.0 * TIME_STEP;
+                        trampolineFlipAngle += deltaAngle;
+                        trampolineFlipRemaining -= deltaAngle;
+                        if (trampolineFlipRemaining <= 0) {
+                            trampolineFlipRemaining = 0;
+                            trampolineFlipAngle = 0;
                         }
                     }
 
@@ -233,10 +245,16 @@ public class GameView extends Pane {
                             // Collision simple (AABB) entre le Gooner et le Bonus
                             if (!b.collected && goon.x < b.x + Bonus.WIDTH && goon.x + Gooner.w > b.x 
                                 && goon.y < b.y + Bonus.HEIGHT && goon.y + Gooner.h > b.y) {
-                                
-                                b.collected = true;
-                                isFlying = true;
-                                flyTimer = 3.0; // 3 secondes de vol !
+                                if (b.type == BonusType.HAT) {
+                                    b.collected = true;
+                                    isFlying = true;
+                                    flyTimer = 3.0; // 3 secondes de vol !
+                                } else if (b.type == BonusType.TRAMPOLINE && goon.velocityY > 0) {
+                                    b.collected = true;
+                                    goon.velocityY = -15.0;
+                                    trampolineFlipRemaining = 360.0;
+                                    trampolineFlipAngle = 0.0;
+                                }
                             }
                         }
 
@@ -303,9 +321,14 @@ public class GameView extends Pane {
                                 nextCoinScoreTarget += COIN_SCORE_STEP;
                             }
 
-                            //Si la plateforme n'est ni fragile, ni fantôme, on a 5% de chance d'y mettre un jetpack
-                            if (!fragile && !ghost && rand.nextInt(100) < 2) {
-                                bonuses.add(new Bonus(newP));
+                            // Si la plateforme n'est ni fragile, ni fantôme, on peut recevoir un bonus
+                            if (!fragile && !ghost) {
+                                int bonusChance = rand.nextInt(100);
+                                if (bonusChance < 4) {
+                                    bonuses.add(new Bonus(newP, BonusType.HAT));
+                                } else if (bonusChance < 8) {
+                                    bonuses.add(new Bonus(newP, BonusType.TRAMPOLINE));
+                                }
                             }
                         }
 
@@ -728,20 +751,27 @@ public class GameView extends Pane {
     }
 
     private void drawGoonerWithOrientation(double x, double y) {
-        if (goon.facingLeft) {
-            // Dessin inversé (Miroir) : on décale de 'w' et on dessine sur '-w'
-            gc.drawImage(goon.skin, x + Gooner.w, y, -Gooner.w, Gooner.h);
-        } else {
-            // Dessin normal
-            gc.drawImage(goon.skin, x, y, Gooner.w, Gooner.h);
+        gc.save();
+        double centerX = x + Gooner.w / 2.0;
+        double centerY = y + Gooner.h / 2.0;
+        gc.translate(centerX, centerY);
+        if (trampolineFlipRemaining > 0) {
+            gc.rotate(trampolineFlipAngle);
         }
+
+        if (goon.facingLeft) {
+            gc.drawImage(goon.skin, -Gooner.w / 2.0, -Gooner.h / 2.0, -Gooner.w, Gooner.h);
+        } else {
+            gc.drawImage(goon.skin, -Gooner.w / 2.0, -Gooner.h / 2.0, Gooner.w, Gooner.h);
+        }
+        gc.restore();
 
         if (isFlying) {
             // On récupère une image de bonus disponible pour avoir le skin (ou on utilise une variable dédiée)
             // on décale le dessin pour le mettre sur sa tête.
             double bonusW = Bonus.WIDTH;
             double bonusH = Bonus.HEIGHT;
-            
+
             // On centre le bonus horizontalement par rapport au Gooner, 
             // et on le place juste au-dessus de sa tête (y - bonusH)
             double bonusX = x + (Gooner.w / 2) - (bonusW / 2);
