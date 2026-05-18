@@ -44,13 +44,13 @@ public class Gooner {
     public void update(){
         velocityY+=GRAVITY;
         y+=velocityY;
-        x+=velocityX;
+        x += velocityX;
 
-        if (x>400){
-            x-=400;
+        if (x > 400) {
+            x -= 400;
         }
-        if (x< -Gooner.w){
-            x+=400;
+        if (x < -Gooner.w) {
+            x += 400;
         }
     }
 

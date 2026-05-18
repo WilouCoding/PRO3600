@@ -1,9 +1,9 @@
-skin_default,true,false
+skin_default,true,true
 skin_bambino,true,false
 skin_transparent,true,false
 skin_red,false,false
 skin_green,false,false
 skin_gold,false,false
-skin_legend,true,true
+skin_legend,true,false
 power_shield,false,false
 power_magnet,false,false

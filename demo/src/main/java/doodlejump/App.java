@@ -14,6 +14,10 @@ public class App extends Application {
     private AccountManager accountManager = new AccountManager();
     private String currentPlayerUsername = null;
 
+    public AccountManager getAccountManager() {
+        return accountManager;
+    }
+
     public void start(Stage stage) {
         this.primaryStage = stage;
         this.root = new StackPane();
