@@ -49,7 +49,7 @@ public class Gooner {
         if (x > 400) {
             x -= 400;
         }
-        if (x < 0) {
+        if (x < -Gooner.w) {
             x += 400;
         }
     }

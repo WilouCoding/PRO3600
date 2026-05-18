@@ -592,16 +592,6 @@ public class GameView extends Pane {
                 gc.strokeLine(midX + 5, midY + 6, midX - 5, midY + 10);
             }   
         }
-        
-        if (goon.facingLeft) {
-            // On dessine l'image inversée
-            // x + w : on décale le point de départ à droite
-            // -w : on dessine vers la gauche pour créer l'effet miroir
-            gc.drawImage(goon.skin, goon.x + Gooner.w, goon.y - cameraY, -Gooner.w, Gooner.h);
-        } else {
-            // Dessin normal vers la droite
-            gc.drawImage(goon.skin, goon.x, goon.y - cameraY, Gooner.w, Gooner.h);
-        }
 
         for (Bonus b : bonuses) {
             if (!b.collected) {
@@ -758,12 +748,10 @@ public class GameView extends Pane {
         if (trampolineFlipRemaining > 0) {
             gc.rotate(trampolineFlipAngle);
         }
-
         if (goon.facingLeft) {
-            gc.drawImage(goon.skin, -Gooner.w / 2.0, -Gooner.h / 2.0, -Gooner.w, Gooner.h);
-        } else {
-            gc.drawImage(goon.skin, -Gooner.w / 2.0, -Gooner.h / 2.0, Gooner.w, Gooner.h);
+            gc.scale(-1, 1);
         }
+        gc.drawImage(goon.skin, -Gooner.w / 2.0, -Gooner.h / 2.0, Gooner.w, Gooner.h);
         gc.restore();
 
         if (isFlying) {
