@@ -11,6 +11,10 @@ public class Gooner {
     public static final double MAX_SPEED_X = 6.0;
     public static final double w = 50;
     public static final double h = 60;
+    public static final double HITBOX_MARGIN_X = 10;
+    public static final double HITBOX_MARGIN_Y = 8;
+    public static final double HITBOX_WIDTH = w - HITBOX_MARGIN_X * 2;
+    public static final double HITBOX_HEIGHT = h - HITBOX_MARGIN_Y;
     public int coins = 0;
 
     public Image skin;
@@ -55,17 +59,33 @@ public class Gooner {
     }
 
     public void moveLeft(){
-        velocityX = Math.max(velocityX - 2, -MAX_SPEED_X);
+        velocityX = -MAX_SPEED_X;
         facingLeft = true;
     }
     
     public void moveRight(){
-        velocityX = Math.min(velocityX + 2, MAX_SPEED_X);
+        velocityX = MAX_SPEED_X;
         facingLeft = false;
     }
     
     public void stopX(){
         velocityX = 0;
+    }
+
+    public double hitboxX() {
+        return x + HITBOX_MARGIN_X;
+    }
+
+    public double hitboxY() {
+        return y + HITBOX_MARGIN_Y;
+    }
+
+    public double hitboxWidth() {
+        return HITBOX_WIDTH;
+    }
+
+    public double hitboxHeight() {
+        return HITBOX_HEIGHT;
     }
     /*public double getx(){
         return x;
