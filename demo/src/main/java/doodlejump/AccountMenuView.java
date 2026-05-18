@@ -37,13 +37,11 @@ public class AccountMenuView extends VBox {
         Button loginButton = new Button("Se connecter");
         Button signupButton = new Button("Créer un compte joueur");
         Button guestButton = new Button("Jouer en invité");
-        Button backButton = new Button("Retour");
 
         String buttonStyle = "-fx-font-size: 16px; -fx-background-color: #7132cf; -fx-text-fill: white; -fx-cursor: hand;";
         loginButton.setStyle(buttonStyle);
         signupButton.setStyle(buttonStyle);
         guestButton.setStyle(buttonStyle);
-        backButton.setStyle(buttonStyle);
 
         loginButton.setOnAction(e -> {
             String username = usernameField.getText().trim();
@@ -76,9 +74,8 @@ public class AccountMenuView extends VBox {
         });
 
         guestButton.setOnAction(e -> callback.onLoggedIn(null));
-        backButton.setOnAction(e -> callback.onBack());
 
-        getChildren().addAll(title, statusLabel, usernameField, passwordField, loginButton, signupButton, guestButton, backButton);
+        getChildren().addAll(title, statusLabel, usernameField, passwordField, loginButton, signupButton, guestButton);
     }
 
     public interface AccountMenuCallback {

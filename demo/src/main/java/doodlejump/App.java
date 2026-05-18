@@ -20,8 +20,8 @@ public class App extends Application {
         
         Scene scene = new Scene(root, 400, 600);
         
-        // On affiche le menu au démarrage
-        showMenu();
+        // On affiche la page de compte au démarrage
+        showAccountMenu();
 
         stage.setScene(scene);
         stage.setTitle("GoonerJump");
