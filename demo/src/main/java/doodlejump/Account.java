@@ -51,7 +51,8 @@ public abstract class Account {
             switch (type) {
                 case PLAYER:
                     int bestScore = parts.length > 3 && !parts[3].isBlank() ? Integer.parseInt(parts[3]) : 0;
-                    return new PlayerAccount(username, storedHash, bestScore, true);
+                    String equippedSkinId = parts.length > 4 ? parts[4] : "skin_default";
+                    return new PlayerAccount(username, storedHash, bestScore, equippedSkinId, true);
                 case USER:
                     String email = parts.length > 3 ? parts[3] : "";
                     String role = parts.length > 4 ? parts[4] : "user";

@@ -52,6 +52,22 @@ public class AccountManager {
         }
     }
 
+    public String getPlayerEquippedSkinId(String username) {
+        Account account = accounts.get(username);
+        if (account instanceof PlayerAccount playerAccount) {
+            return playerAccount.getEquippedSkinId();
+        }
+        return null;
+    }
+
+    public void setPlayerEquippedSkin(String username, String skinId) {
+        Account account = accounts.get(username);
+        if (account instanceof PlayerAccount playerAccount) {
+            playerAccount.setEquippedSkinId(skinId);
+            saveAccounts();
+        }
+    }
+
     private void loadAccounts() {
         File file = new File(FILE_NAME);
         if (!file.exists()) {

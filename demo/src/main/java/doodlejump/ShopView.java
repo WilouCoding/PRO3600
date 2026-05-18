@@ -10,8 +10,12 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 
 public class ShopView extends VBox {
+    private final AccountManager accountManager;
+    private final String currentPlayerUsername;
 
-    public ShopView(App app, CoinManager coinManager, ShopManager shopManager) {
+    public ShopView(App app, CoinManager coinManager, ShopManager shopManager, AccountManager accountManager, String currentPlayerUsername) {
+        this.accountManager = accountManager;
+        this.currentPlayerUsername = currentPlayerUsername;
         this.setSpacing(10);
         this.setAlignment(Pos.TOP_CENTER);
         this.setStyle("-fx-background-color: #0a0a1a;");
@@ -114,6 +118,9 @@ public class ShopView extends VBox {
                 }
             } else {
                 shopManager.equip(item);
+                if (currentPlayerUsername != null && "skin".equals(item.type)) {
+                    accountManager.setPlayerEquippedSkin(currentPlayerUsername, item.id);
+                }
                 updatePreview(item, previewTitle, previewType, previewDescription, previewPrice, previewAction, previewIcon);
                 refreshGrid[0].run();
             }
@@ -161,14 +168,10 @@ public class ShopView extends VBox {
                         }
                     } else {
                         shopManager.equip(item);
+                        if (currentPlayerUsername != null && "skin".equals(item.type)) {
+                            accountManager.setPlayerEquippedSkin(currentPlayerUsername, item.id);
+                        }
                     }
-                    updatePreview(item, previewTitle, previewType, previewDescription, previewPrice, previewAction, previewIcon);
-                    refreshGrid[0].run();
-                });
-
-                card.setOnMouseClicked(e -> {
-                    selectedItem.set(item);
-                    updatePreview(item, previewTitle, previewType, previewDescription, previewPrice, previewAction, previewIcon);
                 });
 
                 card.getChildren().addAll(icon, name, price, actionBtn);

@@ -14,7 +14,10 @@ public class ShopManager {
 
     private void initItems() {
         // Skins
-        items.add(new ShopItem("skin_default", "Skin Par défaut", 0,   "skin",  "#e0b998", "/gooner_skin.png"));
+        ShopItem defaultSkin = new ShopItem("skin_default", "Skin Par défaut", 0,   "skin",  "#e0b998", "/gooner_skin.png");
+        defaultSkin.owned = true;
+        defaultSkin.equipped = true;
+        items.add(defaultSkin);
         items.add(new ShopItem("skin_bambino",    "Bambino",     5,  "skin",  "#000000", "/skin_noir.png"));
         items.add(new ShopItem("skin_transparent",     "Transparentino",    15,  "skin",  "#ffffff", "/skin_transparent.png"));
         items.add(new ShopItem("skin_red",    "Skin Rouge",   50,  "skin",  "#e74c3c", null));
@@ -51,6 +54,20 @@ public class ShopManager {
             .forEach(i -> i.equipped = false);
         item.equipped = true;
         savePurchases();
+    }
+
+    public ShopItem getItemById(String itemId) {
+        return items.stream()
+            .filter(item -> item.id.equals(itemId))
+            .findFirst()
+            .orElse(null);
+    }
+
+    public void equipById(String itemId) {
+        ShopItem item = getItemById(itemId);
+        if (item != null && item.owned) {
+            equip(item);
+        }
     }
 
     private void savePurchases() {
