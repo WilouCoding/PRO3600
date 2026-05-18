@@ -45,6 +45,9 @@ public class GameView extends Pane {
     private App app;
     private VBox pauseMenu; // NOUVEAU : L'interface du menu pause
 
+    private boolean hasUsedSecondChance = false; // Permet de limiter à 1 seconde chance par partie
+    private boolean awaitingSecondChanceChoice = false; // Bloque le jeu en attendant le choix du joueur
+
     public GameView(App app, CoinManager coinManager, ShopManager shopManager, String currentPlayerUsername, AccountManager accountManager) {
         this.app = app;
         this.coinManager = coinManager;
@@ -193,18 +196,16 @@ public class GameView extends Pane {
                                     m.isDead = true;
                                     goon.jump();
                                 } else {
-                                    isGameOver = true;
+                                    declencherMort(); 
                                     saveCollectedCoins();
                                     savePlayerHighScore();
-                                    scorePanel.setGameOver(true);
                                 }
                             }
                         }
                         if (goon.y > cameraY + 600) {
-                            isGameOver = true;
+                            declencherMort();
                             saveCollectedCoins();
                             savePlayerHighScore();
-                            scorePanel.setGameOver(true);
                         }
 
                         // Collecte des pièces
@@ -428,11 +429,38 @@ public class GameView extends Pane {
 
     public void handleKeyPress(KeyCode code) {
 
+        String codeStr = code.toString();
+
         if (code == KeyCode.P) {
             togglePause();
             return;
         }
+        
+        if (awaitingSecondChanceChoice) {
+            if (codeStr.equals("C")) {
+                coinManager.addCoins(-50); // On retire 50 pièces via ton coinManager
+                hasUsedSecondChance = true;
+                awaitingSecondChanceChoice = false;
+                scorePanel.setVisible(true);
+                
+                if (!platforms.isEmpty()) {
+                    Platform plateformeDeSecours = platforms.get(0); // Récupère une plateforme existante
+                    goon.x = plateformeDeSecours.x + (Platform.WIDTH / 2) - (Gooner.w / 2); // Centré sur la plateforme
+                    goon.y = plateformeDeSecours.y - Gooner.h - 10; // Posé juste au-dessus
+                } else {
+                    // Au cas où la liste est vide (très rare), spawn de secours par défaut
+                    goon.x = getWidth() / 2;
+                    goon.y = cameraY + 200;
+                }
+                goon.velocityY = -14;
 
+            } 
+            else if (codeStr.equals("R")) {
+                awaitingSecondChanceChoice = false;
+                isGameOver = true; // Le joueur refuse, c'est le vrai Game Over
+            }
+            return; // On s'arrête ici pour ne pas exécuter le reste des contrôles
+        }
         
         if (isPaused) return;
 
@@ -461,6 +489,19 @@ public class GameView extends Pane {
         bullets.add(new Bullet(bx, by));
     }
 
+    private void declencherMort() {
+        if (!hasUsedSecondChance &&coinManager.getCoins() >= 50) {
+            awaitingSecondChanceChoice = true;
+            goon.velocityY = 0;           // On fige le personnage en l'air
+            goon.velocityX = 0;           // On stoppe ses mouvements
+            scorePanel.setVisible(false);  // On cache le score pour éviter la superposition
+        } else {
+            // S'il n'a pas les 50 pièces, c'est le VRAI Game Over immédiat
+            isGameOver = true;
+            scorePanel.setGameOver(true);  // Le panneau de Game Over classique s'affiche
+        }
+    }
+
     private void resetGame() {
         goon.x = standX;
         goon.y = standY;
@@ -476,6 +517,11 @@ public class GameView extends Pane {
         isFlying = false;
         flyTimer = 0.0;
         bonuses.clear();
+        scorePanel.reset();
+        goon.coins = 0;
+        hasUsedSecondChance = false;
+        awaitingSecondChanceChoice = false;
+        scorePanel.setVisible(true); 
         scorePanel.reset();
         goon.coins = 0;
     }
@@ -619,6 +665,19 @@ public class GameView extends Pane {
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 390, 30);
         gc.setTextAlign(TextAlignment.LEFT);
+
+        if (awaitingSecondChanceChoice) {
+            gc.setFill(Color.web("#2c3e50", 0.85)); // Fond semi-transparent
+            gc.fillRect(0, 0, getWidth(), getHeight());
+
+            gc.setFill(Color.WHITE);
+            gc.setFont(new Font("Arial", 24));
+            gc.fillText("DEUXIÈME CHANCE ?", getWidth() / 2 - 110, getHeight() / 2 - 50);
+            
+            gc.setFont(new Font("Arial", 18));
+            gc.fillText("Appuyez sur [C] pour payer 50 🪙", getWidth() / 2 - 130, getHeight() / 2);
+            gc.fillText("Appuyez sur [R] pour abandonner", getWidth() / 2 - 130, getHeight() / 2 + 40);
+        }
     }
 //Création d'une méthode dédiée pour dessiner une pièce, ICI L'ARBRE DU FOND, pour éviter de surcharger la méthode draw
     private void drawTreeBackground() {
