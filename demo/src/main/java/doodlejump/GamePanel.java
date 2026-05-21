@@ -49,7 +49,7 @@ public class GamePanel extends Canvas {
             gc.setFont(Font.font("Arial", 40));
             gc.fillText("GAME OVER", 80, 150);
             
-            gc.setFill(Color.WHITE);
+            gc.setFill(Color.BLACK);
             gc.setFont(Font.font("Arial", 25));
             gc.fillText("Score Final : " + score, 120, 200);
             
@@ -57,7 +57,7 @@ public class GamePanel extends Canvas {
             gc.setFont(Font.font("Arial", 20));
             gc.fillText("--- TOP 5 ---", 140, 250);
             
-            gc.setFill(Color.WHITE);
+            gc.setFill(Color.BLACK);
             List<Integer> topScores = highScoreManager.getTop5();
             for (int i = 0; i < topScores.size(); i++) {
                 gc.fillText((i + 1) + ". " + topScores.get(i), 160, 285 + (i * 25));
@@ -67,7 +67,7 @@ public class GamePanel extends Canvas {
             gc.setFont(Font.font("Arial", 15));
             gc.fillText("Appuyez sur Espace pour recommencer", 60, 450);
         } else {
-            gc.setFill(Color.WHITE);
+            gc.setFill(Color.BLACK);
             gc.setFont(Font.font("Arial", 20));
             
             int displayBest = Math.max(score, highScoreManager.getBestScore());
