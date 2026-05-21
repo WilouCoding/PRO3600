@@ -45,6 +45,8 @@ public class GameView extends Pane {
     private App app;
     private VBox pauseMenu; // NOUVEAU : L'interface du menu pause
 
+    private AnimationTimer timer;
+
     private boolean hasUsedSecondChance = false; // Permet de limiter à 1 seconde chance par partie
     private boolean awaitingSecondChanceChoice = false; // Bloque le jeu en attendant le choix du joueur
 
@@ -81,7 +83,7 @@ public class GameView extends Pane {
 
         generatePlatform(platforms);
 
-        AnimationTimer timer = new AnimationTimer() {
+        timer = new AnimationTimer() {
             private long lastTime = 0;
             private double accumulator = 0.0;
             private final double TIME_STEP = 1.0 / 60.0; 
@@ -340,9 +342,10 @@ public class GameView extends Pane {
                         }
                     }
                     accumulator -= TIME_STEP;
+                    if (!isGameOver || awaitingSecondChanceChoice) {
+                        draw(goon, platforms);
+                    }
                 }
-
-                draw(goon, platforms);
             }
         };
         timer.start();
@@ -458,6 +461,19 @@ public class GameView extends Pane {
             else if (codeStr.equals("R")) {
                 awaitingSecondChanceChoice = false;
                 isGameOver = true; // Le joueur refuse, c'est le vrai Game Over
+
+                canvas.setVisible(false);     // On cache le canvas pour révéler le scorePanel dessous
+                
+                // On utilise la référence explicite de la classe pour stopper le moteur de rendu
+                if (GameView.this.timer != null) {
+                    GameView.this.timer.stop();
+                }
+
+                scorePanel.setVisible(true);   // On réaffiche le panneau de score caché
+                saveCollectedCoins();
+                savePlayerHighScore();
+                scorePanel.setGameOver(true);  // On déclenche le vrai écran de Game Over rouge
+                
             }
             return; // On s'arrête ici pour ne pas exécuter le reste des contrôles
         }
@@ -498,6 +514,11 @@ public class GameView extends Pane {
         } else {
             // S'il n'a pas les 50 pièces, c'est le VRAI Game Over immédiat
             isGameOver = true;
+            scorePanel.setVisible(true);   
+            saveCollectedCoins();
+            savePlayerHighScore();
+            canvas.setVisible(false); // On cache le canvas
+
             scorePanel.setGameOver(true);  // Le panneau de Game Over classique s'affiche
         }
     }
@@ -524,6 +545,11 @@ public class GameView extends Pane {
         scorePanel.setVisible(true); 
         scorePanel.reset();
         goon.coins = 0;
+        canvas.setVisible(true);
+
+        if (GameView.this.timer != null) {
+            GameView.this.timer.start();
+        }
     }
 
     private void saveCollectedCoins() {
@@ -645,7 +671,7 @@ public class GameView extends Pane {
             }
         }
 
-        gc.setFill(Color.WHITE); // Couleur blanche
+        gc.setFill(Color.BLACK); // Couleur noir
         for (Bullet b : bullets) {
             if (b.active) {
                 // On utilise fillOval au lieu de fillRect
