@@ -19,6 +19,7 @@ public class Gooner {
 
     public Image skin;
     public boolean facingLeft = false; // Pour savoir dans quelle direction le personnage regarde
+    public boolean isBackflipping = false;
 
     public Gooner(double x, double y){
         this(x, y, "/gooner_skin.png");
@@ -56,6 +57,12 @@ public class Gooner {
 
     public void jump(){
         velocityY=-6.0;
+    }
+
+    public void startBackflip() {
+        if (!isBackflipping) {
+            isBackflipping = true;
+        }
     }
 
     public void moveLeft(){

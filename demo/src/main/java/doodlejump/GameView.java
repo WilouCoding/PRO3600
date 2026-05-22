@@ -38,6 +38,8 @@ public class GameView extends Pane {
     private static final int COIN_SCORE_STEP = 200;
     private double flyTimer = 0.0; // Temps de vol restant (en secondes)
     private boolean isFlying = false;
+    private static final double BACKFLIP_DURATION = 0.5;
+    private double backflipTimer = 0.0;
     private Image chapeauSkin = new Image(getClass().getResourceAsStream("/chapeau.png"));
     private double cameraY = 0;
     private Random rand = new Random(); 
@@ -109,7 +111,7 @@ public class GameView extends Pane {
                 }
 
                 while (accumulator >= TIME_STEP) {
-                    if (isFlying) {
+                    if (isFlying && !awaitingSecondChanceChoice) {
                         flyTimer -= TIME_STEP; // TIME_STEP vaut 1/60e de seconde
                         goon.velocityY = -8;   // Le personnage monte tout seul (vitesse constante)
                         
@@ -118,7 +120,14 @@ public class GameView extends Pane {
                         }
                     }
 
-                    if (!isGameOver) {
+                    if (!isGameOver && !awaitingSecondChanceChoice) {
+                        if (goon.isBackflipping) {
+                            backflipTimer += TIME_STEP;
+                            if (backflipTimer >= BACKFLIP_DURATION) {
+                                goon.isBackflipping = false;
+                                backflipTimer = 0.0;
+                            }
+                        }
                         goon.update();
                         scorePanel.updateScore(goon.y);
 
@@ -234,12 +243,19 @@ public class GameView extends Pane {
                             b.update(); // Pour qu'il suive la plateforme si elle bouge
 
                             // Collision simple (AABB) entre le Gooner et le Bonus
-                            if (!b.collected && goon.x < b.x + Bonus.WIDTH && goon.x + Gooner.w > b.x 
-                                && goon.y < b.y + Bonus.HEIGHT && goon.y + Gooner.h > b.y) {
+                            if (!b.collected && goon.x < b.x + b.width && goon.x + Gooner.w > b.x 
+                                && goon.y < b.y + b.height && goon.y + Gooner.h > b.y
+                                && (b.type != BonusType.TRAMPOLINE || goon.velocityY > 0)) {
                                 
                                 b.collected = true;
-                                isFlying = true;
-                                flyTimer = 3.0; // 3 secondes de vol !
+                                if (b.type == BonusType.HAT) {
+                                    isFlying = true;
+                                    flyTimer = 3.0; // 3 secondes de vol !
+                                } else if (b.type == BonusType.TRAMPOLINE) {
+                                    goon.velocityY = -12.0; // Grand saut instantané
+                                    goon.isBackflipping = true;
+                                    backflipTimer = 0.0;
+                                }
                             }
                         }
 
@@ -306,9 +322,10 @@ public class GameView extends Pane {
                                 nextCoinScoreTarget += COIN_SCORE_STEP;
                             }
 
-                            //Si la plateforme n'est ni fragile, ni fantôme, on a 5% de chance d'y mettre un jetpack
-                            if (!fragile && !ghost && rand.nextInt(100) < 2) {
-                                bonuses.add(new Bonus(newP));
+                            //Si la plateforme n'est ni fragile, ni fantôme, on a une petite chance d'y mettre un bonus
+                            if (!fragile && !ghost && rand.nextInt(100) < 15) {
+                                BonusType bonusType = rand.nextInt(100) < 50 ? BonusType.HAT : BonusType.TRAMPOLINE;
+                                bonuses.add(new Bonus(newP, bonusType));
                             }
                         }
 
@@ -490,6 +507,10 @@ public class GameView extends Pane {
         else if (code == KeyCode.RIGHT) goon.moveRight();
         else if (code == KeyCode.SPACE) goon.jump();
         else if (code == KeyCode.Z) shoot();
+        else if (code == KeyCode.S && goon.velocityY != 0) {
+            goon.isBackflipping = true;
+            backflipTimer = 0.0;
+        }
     }
 
     public void handleKeyRelease(KeyCode code) {
@@ -514,6 +535,8 @@ public class GameView extends Pane {
         } else {
             // S'il n'a pas les 50 pièces, c'est le VRAI Game Over immédiat
             isGameOver = true;
+            goon.velocityY = 0;
+            goon.velocityX = 0;
             scorePanel.setVisible(true);   
             saveCollectedCoins();
             savePlayerHighScore();
@@ -591,15 +614,6 @@ public class GameView extends Pane {
 
     public void draw(Gooner goon, List<Platform> platforms) {
         drawSpaceBackground();
-    
-        // Si le perso dépasse à droite, on dessine une copie à gauche
-        if (goon.x + Gooner.w > 400) {
-            drawGoonerWithOrientation(goon.x - 400, goon.y - cameraY);
-        } 
-        // Si le perso dépasse à gauche, on dessine une copie à droite
-        else if (goon.x < 0) {
-            drawGoonerWithOrientation(goon.x + 400, goon.y - cameraY);
-        }
 
         // Dessin du personnage principal (toujours appelé)
         drawGoonerWithOrientation(goon.x, goon.y - cameraY);
@@ -642,19 +656,21 @@ public class GameView extends Pane {
             }   
         }
         
-        if (goon.facingLeft) {
-            // On dessine l'image inversée
-            // x + w : on décale le point de départ à droite
-            // -w : on dessine vers la gauche pour créer l'effet miroir
-            gc.drawImage(goon.skin, goon.x + Gooner.w, goon.y - cameraY, -Gooner.w, Gooner.h);
-        } else {
-            // Dessin normal vers la droite
-            gc.drawImage(goon.skin, goon.x, goon.y - cameraY, Gooner.w, Gooner.h);
-        }
-
         for (Bonus b : bonuses) {
             if (!b.collected) {
-                gc.drawImage(b.skin, b.x, b.y - cameraY, Bonus.WIDTH, Bonus.HEIGHT);
+                if (b.skin != null) {
+                    gc.drawImage(b.skin, b.x, b.y - cameraY, b.width, b.height);
+                } else if (b.type == BonusType.TRAMPOLINE) {
+                    double tx = b.x;
+                    double ty = b.y - cameraY;
+                    gc.setFill(Color.web("#283618"));
+                    gc.fillRoundRect(tx, ty + 4, b.width, b.height - 4, 8, 8);
+                    gc.setFill(Color.web("#8fb339"));
+                    gc.fillRoundRect(tx + 3, ty + 8, b.width - 6, 6, 4, 4);
+                    gc.setStroke(Color.web("#d8e9a8"));
+                    gc.setLineWidth(2);
+                    gc.strokeLine(tx + 6, ty + 12, tx + b.width - 6, ty + 12);
+                }
             }
         }
 
@@ -813,7 +829,22 @@ public class GameView extends Pane {
     }
 
     private void drawGoonerWithOrientation(double x, double y) {
-        if (goon.facingLeft) {
+        if (goon.isBackflipping) {
+            gc.save();
+            double angle = 360.0 * Math.min(1.0, backflipTimer / BACKFLIP_DURATION);
+            double centerX = x + Gooner.w / 2;
+            double centerY = y + Gooner.h / 2;
+            gc.translate(centerX, centerY);
+            gc.rotate(angle);
+
+            if (goon.facingLeft) {
+                gc.drawImage(goon.skin, -Gooner.w / 2 + Gooner.w, -Gooner.h / 2, -Gooner.w, Gooner.h);
+            } else {
+                gc.drawImage(goon.skin, -Gooner.w / 2, -Gooner.h / 2, Gooner.w, Gooner.h);
+            }
+            gc.restore();
+            return;
+        } else if (goon.facingLeft) {
             // Dessin inversé (Miroir) : on décale de 'w' et on dessine sur '-w'
             gc.drawImage(goon.skin, x + Gooner.w, y, -Gooner.w, Gooner.h);
         } else {
