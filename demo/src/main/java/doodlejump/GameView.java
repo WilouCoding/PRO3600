@@ -273,14 +273,14 @@ public class GameView extends Pane {
                                 && goon.y < b.y + b.height && goon.y + Gooner.h > b.y
                                 && (b.type != BonusType.TRAMPOLINE || goon.velocityY > 0)) {
                                 
-                                b.collected = true;
+                                b.collected = true; // TOUJOURS marquer comme collecté
                                 if (b.type == BonusType.HAT && hatCooldownTimer <= 0) {
                                     // Le bonus HAT n'est activé que si on n'est pas en cool-down
                                     isFlying = true;
                                     flyTimer = HAT_FLIGHT_DURATION; // Durée réduite de 3s à 1.5s
                                     hatCooldownTimer = HAT_COOLDOWN; // Activer cool-down pour éviter l'infini
-                                } else if (b.type == BonusType.TRAMPOLINE && goon.backflipCooldownTimer <= 0) {
-                                    // Le bonus TRAMPOLINE n'est activé que si on n'est pas en cool-down pour backflips
+                                } else if (b.type == BonusType.TRAMPOLINE && goon.backflipCooldownTimer <= 0 && !goon.isBackflipping) {
+                                    // Le bonus TRAMPOLINE n'est activé que si on n'est pas en cool-down et pas de backflip en cours
                                     goon.velocityY = -12.0; // Grand saut instantané
                                     goon.isBackflipping = true;
                                     backflipTimer = 0.0;
@@ -554,13 +554,8 @@ public class GameView extends Pane {
 
         if (code == KeyCode.LEFT) goon.moveLeft();
         else if (code == KeyCode.RIGHT) goon.moveRight();
-        else if (code == KeyCode.SPACE) goon.jump();
         else if (code == KeyCode.Z) shoot();
-        else if (code == KeyCode.S && goon.velocityY != 0 && goon.backflipCooldownTimer <= 0) {
-            // Le backflip ne peut être déclenché que si on n'est pas en cool-down
-            goon.isBackflipping = true;
-            backflipTimer = 0.0;
-        }
+        // ESPACE et S sont désactivés - le joueur ne peut sauter/backflip que via les bonus (HAT/TRAMPOLINE)
     }
 
     public void handleKeyRelease(KeyCode code) {
