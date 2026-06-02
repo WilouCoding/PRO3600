@@ -43,20 +43,18 @@ public class GoonerTest {
 
     @Test
     public void testMoveLeft() {
-        double initialVelocityX = gooner.velocityX;
         gooner.moveLeft();
         
-        assertEquals(initialVelocityX - 2, gooner.velocityX, 
-                     "moveLeft() devrait réduire la vélocité X de 2");
+        assertEquals(-Gooner.MAX_SPEED_X, gooner.velocityX, 0.001,
+                     "moveLeft() devrait fixer la vélocité X à -MAX_SPEED_X");
     }
 
     @Test
     public void testMoveRight() {
-        double initialVelocityX = gooner.velocityX;
         gooner.moveRight();
         
-        assertEquals(initialVelocityX + 2, gooner.velocityX, 
-                     "moveRight() devrait augmenter la vélocité X de 2");
+        assertEquals(Gooner.MAX_SPEED_X, gooner.velocityX, 0.001,
+                     "moveRight() devrait fixer la vélocité X à MAX_SPEED_X");
     }
 
     @Test
@@ -71,7 +69,7 @@ public class GoonerTest {
     @Test
     public void testYPositionUpdate() {
         gooner.velocityY = 5;
-        double expectedY = gooner.y + 5;
+        double expectedY = gooner.y + 5 + Gooner.GRAVITY;
         gooner.update();
         
         assertEquals(expectedY, gooner.y, 0.001, "La position Y devrait être mise à jour selon la vélocité");
@@ -97,7 +95,7 @@ public class GoonerTest {
 
     @Test
     public void testScreenWrapLeft() {
-        gooner.x = -50;
+        gooner.x = -55;
         gooner.velocityX = 0;
         gooner.update();
         
