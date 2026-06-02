@@ -43,6 +43,8 @@ public class GameView extends Pane {
     private Image chapeauSkin = new Image(getClass().getResourceAsStream("/chapeau.png"));
     private double cameraY = 0;
     private Random rand = new Random(); 
+    private boolean isInvincible = false;
+    private double invincibilityTimer = 0.0;
     private GamePanel scorePanel;
     private App app;
     private VBox pauseMenu; // NOUVEAU : L'interface du menu pause
@@ -131,27 +133,34 @@ public class GameView extends Pane {
                         goon.update();
                         scorePanel.updateScore(goon.y);
 
+                            if (isInvincible) {
+                                invincibilityTimer -= TIME_STEP;
+                                if (invincibilityTimer <= 0) {
+                                    isInvincible = false;
+                                    invincibilityTimer = 0.0;
+                                }
+                            }
+
                         //On prépare les 3 positions X possibles du Gooner
                         double[] xPositions = { goon.x, goon.x - 400, goon.x + 400 };
-
                         for (Platform p : platforms) {
                             p.update();
 
                             //Collision Gooner → Plateforme
                             if (goon.velocityY > 0) { // Le perso descend
                                 boolean collisionDetectee = false;
-            
+
                                 // On vérifie la collision pour le perso réel ET ses fantômes
                                 for (double gx : xPositions) {
                                     if (gx < p.x + Platform.WIDTH 
                                         && gx + Gooner.w > p.x 
                                         && goon.y + Gooner.h >= p.y 
                                         && goon.y + Gooner.h <= p.y + Platform.HEIGHT) {
-                    
+
                                         collisionDetectee = true;
                                         break; // Une collision trouvée suffit
-                                        }
                                     }
+                                }
 
                                 if (collisionDetectee) {
                                     if (p.isGhost) {
@@ -165,9 +174,7 @@ public class GameView extends Pane {
                                             p.bounceCount++;
                                         }
                                     }
-                                        
                                 }
-                                
                             }
                         }
 
@@ -203,6 +210,9 @@ public class GameView extends Pane {
                             }
                             
                             if (hit) {
+                                if (isInvincible) {
+                                    continue;
+                                }
                                 if (goon.velocityY > 0 && goon.y + Gooner.h <= m.y + Monster.HEIGHT / 2.0) {
                                     m.isDead = true;
                                     goon.jump();
@@ -214,9 +224,11 @@ public class GameView extends Pane {
                             }
                         }
                         if (goon.y > cameraY + 600) {
-                            declencherMort();
-                            saveCollectedCoins();
-                            savePlayerHighScore();
+                            if (!isInvincible) {
+                                declencherMort();
+                                saveCollectedCoins();
+                                savePlayerHighScore();
+                            }
                         }
 
                         // Collecte des pièces
@@ -500,6 +512,26 @@ public class GameView extends Pane {
         if (isGameOver) {
             if (code == KeyCode.SPACE) resetGame();
             if (code == KeyCode.M) app.showMenu();
+            if (code == KeyCode.C && !hasUsedSecondChance && coinManager.getCoins() >= 50) {
+                hasUsedSecondChance = true;
+                coinManager.addCoins(-50);
+                isGameOver = false;
+                isInvincible = true;
+                invincibilityTimer = 1.0;
+                scorePanel.setGameOver(false);
+                awaitingSecondChanceChoice = false;
+
+                if (!platforms.isEmpty()) {
+                    Platform rescue = platforms.get(0);
+                    goon.x = rescue.x + (Platform.WIDTH / 2) - (Gooner.w / 2);
+                    goon.y = rescue.y - Gooner.h - 10;
+                } else {
+                    goon.x = standX;
+                    goon.y = standY;
+                }
+                goon.velocityY = -14;
+                goon.velocityX = 0;
+            }
             return;
         }
 
@@ -559,6 +591,8 @@ public class GameView extends Pane {
         isGameOver = false;
         isPaused = false; // Par sécurité
         isFlying = false;
+        isInvincible = false;
+        invincibilityTimer = 0.0;
         flyTimer = 0.0;
         bonuses.clear();
         scorePanel.reset();
@@ -707,6 +741,12 @@ public class GameView extends Pane {
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 390, 30);
         gc.setTextAlign(TextAlignment.LEFT);
+
+        if (isInvincible) {
+            gc.setFill(Color.YELLOW);
+            gc.setFont(Font.font("Arial", 16));
+            gc.fillText("INVINCIBLE: " + String.format("%.1f", invincibilityTimer) + "s", 10, 60);
+        }
 
         if (awaitingSecondChanceChoice) {
             gc.setFill(Color.web("#2c3e50", 0.85)); // Fond semi-transparent
