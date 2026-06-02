@@ -38,8 +38,12 @@ public class GameView extends Pane {
     private static final int COIN_SCORE_STEP = 200;
     private double flyTimer = 0.0; // Temps de vol restant (en secondes)
     private boolean isFlying = false;
+    private double hatCooldownTimer = 0.0; // Cool-down pour le bonus HAT (évite l'infini)
+    private static final double HAT_COOLDOWN = 2.0; // 2 secondes entre chaque activation de HAT
+    private static final double HAT_FLIGHT_DURATION = 1.5; // Réduit de 3 à 1.5 secondes
     private static final double BACKFLIP_DURATION = 0.5;
     private double backflipTimer = 0.0;
+    private static final double BACKFLIP_COOLDOWN = 0.8; // 0.8 secondes de cool-down après un backflip
     private Image chapeauSkin = new Image(getClass().getResourceAsStream("/chapeau.png"));
     private double cameraY = 0;
     private Random rand = new Random(); 
@@ -118,8 +122,17 @@ public class GameView extends Pane {
                         goon.velocityY = -8;   // Le personnage monte tout seul (vitesse constante)
                         
                         if (flyTimer <= 0) {
-                            isFlying = false;  // Fin du bonus après 5 secondes
+                            isFlying = false;  // Fin du bonus après la durée définie
                         }
+                    }
+
+                    // Mettre à jour les cool-downs
+                    if (hatCooldownTimer > 0) {
+                        hatCooldownTimer -= TIME_STEP;
+                    }
+                    
+                    if (goon.backflipCooldownTimer > 0) {
+                        goon.backflipCooldownTimer -= TIME_STEP;
                     }
 
                     if (!isGameOver && !awaitingSecondChanceChoice) {
@@ -128,6 +141,7 @@ public class GameView extends Pane {
                             if (backflipTimer >= BACKFLIP_DURATION) {
                                 goon.isBackflipping = false;
                                 backflipTimer = 0.0;
+                                goon.backflipCooldownTimer = BACKFLIP_COOLDOWN; // Activer le cool-down après backflip
                             }
                         }
                         goon.update();
@@ -260,10 +274,13 @@ public class GameView extends Pane {
                                 && (b.type != BonusType.TRAMPOLINE || goon.velocityY > 0)) {
                                 
                                 b.collected = true;
-                                if (b.type == BonusType.HAT) {
+                                if (b.type == BonusType.HAT && hatCooldownTimer <= 0) {
+                                    // Le bonus HAT n'est activé que si on n'est pas en cool-down
                                     isFlying = true;
-                                    flyTimer = 3.0; // 3 secondes de vol !
-                                } else if (b.type == BonusType.TRAMPOLINE) {
+                                    flyTimer = HAT_FLIGHT_DURATION; // Durée réduite de 3s à 1.5s
+                                    hatCooldownTimer = HAT_COOLDOWN; // Activer cool-down pour éviter l'infini
+                                } else if (b.type == BonusType.TRAMPOLINE && goon.backflipCooldownTimer <= 0) {
+                                    // Le bonus TRAMPOLINE n'est activé que si on n'est pas en cool-down pour backflips
                                     goon.velocityY = -12.0; // Grand saut instantané
                                     goon.isBackflipping = true;
                                     backflipTimer = 0.0;
@@ -539,7 +556,8 @@ public class GameView extends Pane {
         else if (code == KeyCode.RIGHT) goon.moveRight();
         else if (code == KeyCode.SPACE) goon.jump();
         else if (code == KeyCode.Z) shoot();
-        else if (code == KeyCode.S && goon.velocityY != 0) {
+        else if (code == KeyCode.S && goon.velocityY != 0 && goon.backflipCooldownTimer <= 0) {
+            // Le backflip ne peut être déclenché que si on n'est pas en cool-down
             goon.isBackflipping = true;
             backflipTimer = 0.0;
         }

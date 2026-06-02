@@ -20,6 +20,7 @@ public class Gooner {
     public Image skin;
     public boolean facingLeft = false; // Pour savoir dans quelle direction le personnage regarde
     public boolean isBackflipping = false;
+    public double backflipCooldownTimer = 0.0; // Cool-down après un backflip
 
     public Gooner(double x, double y){
         this(x, y, "/gooner_skin.png");
