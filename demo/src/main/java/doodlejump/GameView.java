@@ -662,9 +662,6 @@ public class GameView extends Pane {
     public void draw(Gooner goon, List<Platform> platforms) {
         drawSpaceBackground();
 
-        // Dessin du personnage principal (toujours appelé)
-        drawGoonerWithOrientation(goon.x, goon.y - cameraY);
-
         for (Platform p : platforms) {
             if (p.isMoving) {
                 gc.setFill(Color.LIGHTBLUE); // Plateforme mobile
@@ -750,6 +747,16 @@ public class GameView extends Pane {
         for (Coin c : coins) {
             drawCoin(gc, c.x, c.y - cameraY, Coin.SIZE);
         }
+
+        // Dessin du personnage principal et de ses "copies" pour l'effet de wrap horizontal
+        double[] goonXPositions = { goon.x, goon.x - 400, goon.x + 400 };
+        for (double gx : goonXPositions) {
+            // On ne dessine que les copies qui sont (même partiellement) visibles à l'écran
+            if (gx + Gooner.w >= 0 && gx <= 400) {
+                drawGoonerWithOrientation(gx, goon.y - cameraY);
+            }
+        }
+
         gc.setFont(Font.font("Arial", 16));
         gc.setTextAlign(TextAlignment.RIGHT);
         gc.fillText("🪙 " + goon.coins + "  (Total: " + coinManager.getCoins() + ")", 390, 30);
